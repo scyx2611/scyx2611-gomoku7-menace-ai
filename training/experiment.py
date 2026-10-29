@@ -20,9 +20,11 @@ import shutil
 import time
 
 from agents.base_agent import Agent
+from agents.gradient_card_agent import GradientCardAgent, GradientCardConfig
 from agents.heuristic_agent import HeuristicAgent
 from agents.menace_agent import MenaceAgent, MenaceConfig
 from agents.minimax_agent import MinimaxAgent
+from agents.mixed_opponent import MixedOpponent
 from agents.pattern_menace_agent import PatternMenaceAgent, PatternMenaceConfig
 from agents.random_agent import RandomAgent
 from agents.rapfi_agent import EngineUnavailableError, RapfiAgent
@@ -31,15 +33,25 @@ from core.symmetry import canonical
 from reporting.logger import MatchLogger, write_csv
 
 from .evaluation import evaluate
+from .tactics import tactical_score
 from .trainer import Tally, run_games
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 
 
-def make_agent(spec: dict, seed: int | None = None) -> Agent:
+def make_agent(spec: dict, seed: int | None = None, ai: Agent | None = None) -> Agent:
+    """依設定建立代理。type="self" 需提供 ai（建立共用牌組的自我對弈分身）。"""
     t = spec["type"]
     name = spec.get("name")
+    if t == "self":
+        if ai is None or not hasattr(ai, "twin"):
+            raise ValueError("自我對弈需要支援 twin() 的學習 AI")
+        return ai.twin(name=name)
+    if t == "mixed":
+        pool = [(make_agent(e, None if seed is None else seed + 101 * (k + 1), ai), e.get("weight", 1.0))
+                for k, e in enumerate(spec["pool"])]
+        return MixedOpponent(pool, name=name, seed=seed)
     if t == "menace":
         if "load" in spec:
             return MenaceAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
@@ -48,6 +60,10 @@ def make_agent(spec: dict, seed: int | None = None) -> Agent:
         if "load" in spec:
             return PatternMenaceAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
         return PatternMenaceAgent(PatternMenaceConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
+    if t == "card_pg":
+        if "load" in spec:
+            return GradientCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
+        return GradientCardAgent(GradientCardConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
     if t == "random":
         return RandomAgent(name=name, seed=seed)
     if t == "heuristic":
@@ -91,6 +107,11 @@ def learning_stats(ai: Agent) -> dict:
             classes = {canonical([decode[ch] for ch in k])[0] for k in ai.memory.states}
             stats["unique_states_after_symmetry"] = len(classes)
         return stats
+    if isinstance(ai, GradientCardAgent):
+        cards = sorted(((ai.memory.card(k), k) for k in ai.memory.theta), reverse=True)
+        return {**ai.memory.stats(), **ai.opponent_memory.stats(),
+                "top_cards": [{"pattern": k, "card": round(v, 2)} for v, k in cards[:8]],
+                "bottom_cards": [{"pattern": k, "card": round(v, 4)} for v, k in cards[-5:]]}
     if isinstance(ai, PatternMenaceAgent):
         cards = list(ai.memory.cards.values())
         init = ai.memory.initial_weight
@@ -115,7 +136,9 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
     os.makedirs(p["dir"], exist_ok=True)
 
     seed = cfg.get("seed", 2026)
-    ai_color = NAME_COLOR[cfg.get("ai_color", "black")]
+    ai_color_name = cfg.get("ai_color", "black")
+    ai_color = "alternate" if ai_color_name == "alternate" else NAME_COLOR[ai_color_name]
+    eval_color = NAME_COLOR["black"] if ai_color == "alternate" else ai_color
     n_train = cfg.get("train_games", 5000)
     eval_every = cfg.get("eval_every", 500)
     eval_games = cfg.get("eval_games", 100)
@@ -128,7 +151,15 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
     ai = make_agent(cfg["ai"], seed=seed)
-    train_opp = make_agent(cfg["opponent"], seed=seed + 1)
+    train_opp = make_agent(cfg["opponent"], seed=seed + 1, ai=ai)
+    # 檢查點評估的對手：預設與訓練對手相同；訓練對手含自我對弈時必須另外指定固定對手
+    cp_specs = cfg.get("checkpoint_eval") or [{"spec": cfg["opponent"], "ai_color": None, "label": "checkpoint"}]
+    cp_opps = []
+    for e in cp_specs:
+        opp = train_opp if e["spec"] is cfg["opponent"] else make_agent(e["spec"], seed=seed + 3)
+        color = eval_color if e.get("ai_color") is None else NAME_COLOR[e["ai_color"]]
+        cp_opps.append((e.get("label", opp.name), opp, color))
+    use_tactics = cfg.get("tactics", False) and hasattr(ai, "move_probabilities")
     t0 = time.time()
 
     def log(msg: str) -> None:
@@ -138,16 +169,22 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
     eval_rows: list[dict] = []
     eval_index = [0]
 
-    def checkpoint(after: int, eval_log: MatchLogger) -> dict:
-        res = evaluate(ai, train_opp, eval_games, ai_color=ai_color, base_seed=seed + 7, experiment=name,
-                       logger=eval_log, start_index=eval_index[0] + 1, label="checkpoint")
-        eval_index[0] += eval_games
-        row = {"after_train_games": after, "opponent": train_opp.name, "games": res["games"], "wins": res["wins"],
-               "losses": res["losses"], "draws": res["draws"], "win_rate": res["win_rate"],
-               "avg_moves": res["avg_moves"]}
-        eval_rows.append(row)
-        log(f"檢查點 {after:>6} 局：評估勝率 {res['win_rate']:.3f}（{res['wins']}/{res['games']}）")
-        return row
+    def checkpoint(after: int, eval_log: MatchLogger) -> None:
+        tac = tactical_score(ai) if use_tactics else None
+        for label, opp, color in cp_opps:
+            res = evaluate(ai, opp, eval_games, ai_color=color, base_seed=seed + 7, experiment=name,
+                           logger=eval_log, start_index=eval_index[0] + 1, label=label)
+            eval_index[0] += eval_games
+            row = {"after_train_games": after, "label": label, "opponent": opp.name,
+                   "ai_color": "black" if color == NAME_COLOR["black"] else "white", "games": res["games"],
+                   "wins": res["wins"], "losses": res["losses"], "draws": res["draws"], "win_rate": res["win_rate"],
+                   "avg_moves": res["avg_moves"]}
+            if tac:
+                row.update({f"tactics_{k}": tac[k]["prob"] for k in ("win", "block", "three")})
+            eval_rows.append(row)
+            log(f"檢查點 {after:>6} 局 [{label}]：評估勝率 {res['win_rate']:.3f}（{res['wins']}/{res['games']}）"
+                + (f"；攻防測驗 連五 {tac['win']['prob']:.2f} 擋四 {tac['block']['prob']:.2f} "
+                   f"擋活三 {tac['three']['prob']:.2f}" if tac else ""))
 
     tally = Tally(window=cfg.get("rolling_window", 50), stable_threshold=cfg.get("stable_threshold", 0.5))
     train_rows: list[dict] = []
@@ -173,7 +210,8 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
                 final.append({"label": label, "skipped": str(e)})
                 log(f"略過最終評估 {label}：{e}")
                 continue
-            res = evaluate(ai, opp, spec.get("games", final_eval_games), ai_color=ai_color, base_seed=seed + 11,
+            color = eval_color if spec.get("ai_color") is None else NAME_COLOR[spec["ai_color"]]
+            res = evaluate(ai, opp, spec.get("games", final_eval_games), ai_color=color, base_seed=seed + 11,
                            experiment=name, logger=eval_log, start_index=eval_index[0] + 1, label=label)
             eval_index[0] += res["games"]
             final.append(res)
@@ -181,6 +219,8 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
             if hasattr(opp, "close"):
                 opp.close()
 
+    if hasattr(train_opp, "close"):
+        train_opp.close()
     write_csv(p["train_csv"], train_rows, overwrite=True)
     write_csv(p["eval_csv"], eval_rows, overwrite=True)
     if hasattr(ai, "save"):
@@ -207,6 +247,7 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
         "checkpoints": eval_rows,
         "final_eval": final,
         "learning_stats": learning_stats(ai),
+        **({"tactics": tactical_score(ai)} if use_tactics else {}),
         "elapsed_sec": round(time.time() - t0, 1),
         "files": {k: os.path.relpath(v, ROOT) for k, v in p.items() if k != "dir"},
     }

@@ -7,19 +7,20 @@
 - 主體 AI 完全自行實作（`agents/menace_agent.py`、`agents/pattern_menace_agent.py`）。
 - 外部引擎 Rapfi 只作為「強力 AI」與評估對手，不參與獎懲學習。
 
-## 兩個版本的學習 AI
+## 三個版本的學習 AI
 
-| | 修正前：整盤局面位子牌 | 修正後：棋形位子牌 |
-|---|---|---|
-| 檔案 | `agents/menace_agent.py` | `agents/pattern_menace_agent.py` |
-| 位子牌綁定 | 完整的 49 格盤面 | 該位置四個方向（橫、直、兩斜）左右各 4 格的局部棋形 |
-| 某位置的牌數 | 該盤面牌組中此位置的牌數 | 四個方向棋形牌數相乘 |
-| 選擇機率 | P(a\|s) = w(s,a) / Σ w(s,b) | 同左 |
-| 獎懲（預設） | 勝 +3、敗 −1、和 +1、初始 10、下限 1 | 同左 |
-| 對稱去重 | 可選：八種旋轉/鏡像取標準形 | 預設：線段正反合併、四方向共用 |
-| 對手記憶 | 記錄對手在每個盤面下的位置；可選「避讓」 | 記錄對手偏好的棋形；可選「搶點」 |
+| | 修正前：整盤局面位子牌 | 第一次修正：棋形位子牌 | 第二次修正：棋形計數牌（預設） |
+|---|---|---|---|
+| 檔案 | `agents/menace_agent.py` | `agents/pattern_menace_agent.py` | `agents/gradient_card_agent.py` |
+| 位子牌綁定 | 完整的 49 格盤面 | 四個方向左右各 4 格的完整排列 | 四個方向「自己/對手在未被擋的五格內最多幾子」（共 33 種牌） |
+| 某位置的牌數 | 該盤面牌組中此位置的牌數 | 四個方向棋形牌數相乘 | 同左 |
+| 選擇機率 | P(a\|s) = w(s,a) / Σ w(s,b) | 同左 | 同左 |
+| 獎懲 | 勝 +3、敗 −1、和 +1（整數加減） | 同左 | 按比例增減，並讓其他候選位置相對變化；越接近終局調整越大 |
+| 訓練對手 | 確定性規則型 | 確定性規則型 | 混合：自我對弈＋多種對手，先後手輪流 |
+| 攻防測驗（擋四） | 8.9%（＝亂下） | 6.9% | 75.3% |
 
-為什麼要修正、修正後效果如何，請看 `docs/檢討報告.md` 與 `data/reports/experiment_report.md`。
+攻防測驗是「必須擋四」的局面中，AI 抽中正確位置的機率，3～5 個種子的平均。
+為什麼要修正、每次修正的效果，請看 `docs/檢討報告.md` 與 `data/reports/experiment_report.md`。
 
 ## 安裝
 
@@ -46,27 +47,33 @@ Windows 版執行檔尚未在本專案中實測。
 ```bash
 python main.py play
 ```
-開啟 Pygame 對弈介面（預設對手：修正後位子牌 AI，你執白）。可切換對手、執黑/執白、顯示 AI 上一手的位子牌機率、開始/停止訓練、保存模型。對局自動記錄在 `data/matches/human_games.jsonl`。
+開啟 Pygame 對弈介面（預設對手：第二次修正的位子牌 AI，你執白）。可切換對手、執黑/執白、顯示 AI 上一手的位子牌機率、開始/停止訓練、保存模型。對局自動記錄在 `data/matches/human_games.jsonl`。
 
 ```bash
 python main.py play --cli --opponent rule --human black
 ```
-文字模式對弈（不需要 Pygame）。對手可選 `learned`、`baseline`、`rule`、`pattern`、`minimax`、`random`、`rapfi`。
+文字模式對弈（不需要 Pygame）。對手可選 `learned`（第二次修正）、`improved`（第一次修正）、`baseline`（修正前）、`rule`、`pattern`、`minimax`、`random`、`rapfi`。
 
 ```bash
-python main.py train --agent pattern --opponent rule --games 3000 --out data/models/my_model.json --log data/matches/my_train.jsonl
+python main.py train --agent card --opponent rule --games 3000 --out data/models/my_model.json --log data/matches/my_train.jsonl
 ```
-訓練一個學習 AI。`--agent menace` 是修正前版本；`--color white` 讓 AI 當後手；`--load` 從既有權重繼續訓練。
+訓練一個學習 AI。`--agent card` 是第二次修正（預設）、`pattern` 是第一次修正、`menace` 是修正前；`--color white` 讓 AI 當後手；`--load` 從既有權重繼續訓練。
+（混合對手＋自我對弈的訓練請用實驗設定檔，見下方。）
 
 ```bash
-python main.py evaluate data/models/improved_first.json --opponents rule pattern random --games 200
+python main.py evaluate data/models/card_v3_mixed.json --opponents rule pattern random --games 200
 ```
 以凍結權重評估（不改動模型）。
 
 ```bash
 python main.py experiment configs/experiments.json --parallel 4
 ```
-重跑全部實驗（45 組，每組 10000 局；在 4 核心的環境約需 30～60 分鐘）。用 `--only improved_first baseline_first` 只跑指定實驗。既有結果不會被覆蓋，除非加 `--force`。實驗設計寫在 `configs/make_experiments.py`。
+重跑修正前與第一次修正的實驗（45 組，每組 10000 局；在 4 核心的環境約需 30～60 分鐘）。用 `--only improved_first baseline_first` 只跑指定實驗。既有結果不會被覆蓋，除非加 `--force`。實驗設計寫在 `configs/make_experiments.py`。
+
+```bash
+python main.py experiment configs/experiments_v3.json --parallel 4
+```
+重跑第二次修正的實驗（18 組，設計在 `configs/make_experiments_v3.py`）。
 
 ```bash
 python main.py report
@@ -92,8 +99,8 @@ python -m pytest
 
 ```text
 core/            棋盤、五連判定、對弈流程與重播、八種對稱
-agents/          學習 AI（修正前/修正後）、隨機、規則型、Minimax、Rapfi
-training/        獎懲規則、位子牌/對手記憶、訓練迴圈、凍結評估、實驗執行器
+agents/          學習 AI（三個版本）、混合對手、隨機、規則型、Minimax、Rapfi
+training/        獎懲規則、位子牌/對手記憶、訓練迴圈、凍結評估、攻防測驗、實驗執行器
 reporting/       棋譜 JSONL 紀錄、報告與圖表產生
 ui/              Pygame 介面、文字模式對弈
 configs/         實驗設定（make_experiments.py 產生 experiments.json）
@@ -119,13 +126,13 @@ engines/rapfi/   外部引擎（選用）
 | `moves` | 每一手：`n` 第幾手、`player`、`row`、`col`、`by`（ai/opponent） |
 | `result` / `winner` | `ai_win` / `ai_loss` / `draw` |
 | `reward_params` | 本局使用的獎懲參數 |
-| `learning` | AI 每一手：局面、選擇、選擇前牌數、牌組總數、增減、選擇後牌數（修正後版本另含四個棋形與各自牌數） |
+| `learning` | AI 每一手：局面、選擇、選擇前牌數、牌組總數、增減、選擇後牌數（第一次、第二次修正另含四個方向的棋形與各自牌數；第二次修正另含 θ 調整量 `delta_theta`） |
 
-主要實驗（`baseline_first`、`improved_first`、`baseline_second`、`improved_second`）保存完整 `learning` 欄位；
+主要實驗（`baseline_first`、`improved_first`、`baseline_second`、`improved_second`、`card_v3_rule_first`、`card_v3_mixed`）保存完整 `learning` 欄位；
 其他實驗只保存落子與結果，以 gzip 壓縮。
 
 ## 測試涵蓋
 
 交接文件列出的 12 項必要測試都有對應（`tests/`）：四方向五連、邊界、重複落子、終局後落子、平局、
 對稱標準形與座標還原、牌數歸零仍可選、保存/讀取一致、棋譜重播、先後手、評估不改權重；
-另有獎懲計算、對手記憶、重現性、Minimax、Rapfi 完整對局（未安裝 Rapfi 時自動略過）等測試。
+另有獎懲計算、對手記憶、重現性、按比例增減的方向、自我對弈共用牌組、混合對手、攻防測驗出題、Minimax、Rapfi 完整對局（未安裝 Rapfi 時自動略過）等測試。

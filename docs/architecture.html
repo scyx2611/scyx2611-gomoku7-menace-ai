@@ -136,7 +136,8 @@ section { display: flex; flex-direction: column; gap: 12px; }
         <div class="mod"><div class="mod-head"><code>trainer.py</code><span class="chip done">已完成</span></div><p>自動對弈 N 局、固定亂數種子、每局結束更新權重、保存/載入訓練狀態</p></div>
         <div class="mod"><div class="mod-head"><code>evaluation.py</code><span class="chip done">已完成</span></div><p>以凍結副本評估，評估前後比對學習資料雜湊值</p></div>
         <div class="mod key"><div class="mod-head"><code>rewards.py</code><span class="chip done">已完成</span></div><p>勝 +3、敗 −1、和 +1、初始 10、下限 1；可設「輸前最後一手」懲罰與存活獎勵</p></div>
-        <div class="mod key"><div class="mod-head"><code>memory.py</code><span class="chip done">已完成</span></div><p>整盤位子牌組、棋形牌組，以及兩種對手記憶（整盤局面／棋形偏好）</p></div>
+        <div class="mod key"><div class="mod-head"><code>memory.py</code><span class="chip done">已完成</span></div><p>整盤位子牌組、棋形牌組、按比例的棋形牌（θ），以及兩種對手記憶</p></div>
+        <div class="mod"><div class="mod-head"><code>tactics.py</code><span class="chip done">已完成</span></div><p>攻防測驗：能連五、必須擋四、該擋活三各 200 題，只用來評分、不參與學習</p></div>
       </div>
     </div>
     <div class="connector"><div></div><div>驅動對弈 ↓</div></div>
@@ -147,7 +148,9 @@ section { display: flex; flex-direction: column; gap: 12px; }
         <div class="group">
           <div class="group-title"><span class="stone b"></span>學習方（預設先手）</div>
           <div class="mod"><div class="mod-head"><code>menace_agent.py</code><span class="chip done">修正前</span></div><p>位子牌綁定整個盤面。7×7 盤面太多，幾乎不會重複遇到，獎懲累積不起來</p></div>
-          <div class="mod key"><div class="mod-head"><code>pattern_menace_agent.py</code><span class="chip done">修正後</span></div><p>位子牌綁定四個方向的局部棋形，牌數相乘；相同棋形在不同局之間共用經驗</p></div>
+          <div class="mod"><div class="mod-head"><code>pattern_menace_agent.py</code><span class="chip done">第一次修正</span></div><p>位子牌綁定四個方向的局部棋形，牌數相乘。對固定對手會贏，但只是背路線，學不會擋四</p></div>
+          <div class="mod key"><div class="mod-head"><code>gradient_card_agent.py</code><span class="chip done">第二次修正</span></div><p>棋形計數牌（33 種）＋按比例增減牌數；學會連五、擋四、擋活三。對弈介面預設</p></div>
+          <div class="mod"><div class="mod-head"><code>mixed_opponent.py</code><span class="chip done">已完成</span></div><p>每局依權重抽對手：自我對弈（共用同一副牌）與多種規則型、隨機對手</p></div>
           <div class="mod"><div class="mod-head"><code>base_agent.py</code><span class="chip done">已完成</span></div><p>統一介面：start_game / select_move / observe_move / end_game</p></div>
         </div>
         <div class="group wall">

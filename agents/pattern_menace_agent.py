@@ -61,6 +61,60 @@ def _build_lines(radius: int) -> list[list[list[int]]]:
     return table
 
 
+def _build_dir_windows() -> list[list[list[tuple[int, ...]]]]:
+    """DIR_WINDOWS[a][d] = 方向 d 上所有通過位置 a、長度 5 的視窗。"""
+    from core.rules import WINDOWS
+    out = []
+    for a in range(SIZE * SIZE):
+        per_dir = []
+        for dr, dc in DIRECTIONS:
+            ws = []
+            for w in WINDOWS:
+                (r0, c0), (r1, c1) = divmod(w[0], SIZE), divmod(w[1], SIZE)
+                if a in w and (r1 - r0, c1 - c0) == (dr, dc):
+                    ws.append(w)
+            per_dir.append(ws)
+        out.append(per_dir)
+    return out
+
+
+DIR_WINDOWS = _build_dir_windows()
+
+
+def window_keys(cells: list[int], a: int, color: int) -> list[str]:
+    """位置 a 四個方向的「視窗計數」棋形（以 color 視角）。
+
+    每個方向取通過 a 的所有長度 5 視窗：
+        攻 = 不含對手子的視窗中，自己子數的最大值（-1 表示此方向已無法連五）
+        攻n = 達到最大值的視窗數（1 或 2 以上；用來區分「活」與「死」）
+        守 / 守n = 同理，看對手子數（不含自己子的視窗）
+    編碼為 "攻,攻n|守,守n"，例如 "4,1|0,2"。四個方向共用同一套牌（等同旋轉對稱去重）。
+    """
+    keys = []
+    for ws in DIR_WINDOWS[a]:
+        om, on, dm, dn = -1, 0, -1, 0
+        for w in ws:
+            own = opp = 0
+            for j in w:
+                v = cells[j] * color
+                if v > 0:
+                    own += 1
+                elif v < 0:
+                    opp += 1
+            if opp == 0:
+                if own > om:
+                    om, on = own, 1
+                elif own == om:
+                    on += 1
+            if own == 0:
+                if opp > dm:
+                    dm, dn = opp, 1
+                elif opp == dm:
+                    dn += 1
+        keys.append(f"{om},{min(on, 2)}|{dm},{min(dn, 2)}")
+    return keys
+
+
 _LINES_CACHE: dict[int, list[list[list[int]]]] = {}
 
 
@@ -94,6 +148,7 @@ def pattern_keys(cells: list[int], a: int, color: int, radius: int = 4, use_symm
 class PatternMenaceConfig:
     reward: RewardConfig = field(default_factory=RewardConfig)
     combine: str = "product"          # "product" 或 "sum"
+    features: str = "line"            # "line"：左右各 radius 格的完整排列；"window"：視窗計數（見 window_keys）
     radius: int = 4
     use_symmetry: bool = True
     opponent_model: str = "off"       # "off" 或 "preempt"
@@ -101,16 +156,19 @@ class PatternMenaceConfig:
     version: str = "pattern-menace-1.0"
 
     def to_dict(self) -> dict:
-        return {"reward": self.reward.to_dict(), "combine": self.combine, "radius": self.radius,
+        return {"reward": self.reward.to_dict(), "combine": self.combine, "features": self.features,
+                "radius": self.radius,
                 "use_symmetry": self.use_symmetry, "opponent_model": self.opponent_model,
                 "preempt_strength": self.preempt_strength, "version": self.version}
 
     @classmethod
     def from_dict(cls, d: dict) -> "PatternMenaceConfig":
         cfg = cls(reward=RewardConfig.from_dict(d.get("reward", {})))
-        for k in ("combine", "radius", "use_symmetry", "opponent_model", "preempt_strength", "version"):
+        for k in ("combine", "features", "radius", "use_symmetry", "opponent_model", "preempt_strength", "version"):
             if k in d:
                 setattr(cfg, k, d[k])
+        if cfg.features not in ("line", "window"):
+            raise ValueError("features 必須是 'line' 或 'window'")
         if cfg.combine not in ("product", "sum"):
             raise ValueError("combine 必須是 'product' 或 'sum'")
         if cfg.opponent_model not in ("off", "preempt"):
@@ -126,7 +184,7 @@ class PatternMenaceAgent(Agent):
         super().__init__(name or "pattern-menace", seed)
         self.config = config or PatternMenaceConfig()
         r = self.config.reward
-        self.memory = PatternCardMemory(r.initial_weight, r.min_weight)
+        self.memory = PatternCardMemory(r.initial_weight, r.min_weight, r.max_weight)
         self.opponent_memory = OpponentPatternMemory()
         self.learning = learning
         self.games_trained = 0
@@ -146,6 +204,8 @@ class PatternMenaceAgent(Agent):
         self.steps = []
 
     def _keys(self, cells: list[int], a: int, color: int) -> list[str]:
+        if self.config.features == "window":
+            return window_keys(cells, a, color)
         return pattern_keys(cells, a, color, self.config.radius, self.config.use_symmetry)
 
     def _combine(self, values: list[int]) -> float:
@@ -258,6 +318,17 @@ class PatternMenaceAgent(Agent):
              name: str | None = None) -> "PatternMenaceAgent":
         with open(path, encoding="utf-8") as f:
             return cls.from_dict(json.load(f), learning=learning, seed=seed, name=name)
+
+    def twin(self, name: str | None = None) -> "PatternMenaceAgent":
+        """自我對弈用：另一個「座位」，與本體共用同一副棋形牌與對手記憶。
+
+        兩個座位各自記錄本局的選擇，終局時各自依自己的勝負更新同一副牌。
+        """
+        other = PatternMenaceAgent(self.config, name=name or f"{self.name}-self", learning=self.learning)
+        other.memory = self.memory
+        other.opponent_memory = self.opponent_memory
+        other.kind = "self_play"
+        return other
 
     def clone(self, learning: bool | None = None) -> "PatternMenaceAgent":
         return PatternMenaceAgent.from_dict(json.loads(json.dumps(self.to_dict())),

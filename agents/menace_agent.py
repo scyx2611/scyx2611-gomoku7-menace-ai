@@ -70,7 +70,7 @@ class MenaceAgent(Agent):
         super().__init__(name or "menace", seed)
         self.config = config or MenaceConfig()
         r = self.config.reward
-        self.memory = PositionCardMemory(r.initial_weight, r.min_weight)
+        self.memory = PositionCardMemory(r.initial_weight, r.min_weight, r.max_weight)
         self.opponent_memory = OpponentMemory()
         self.learning = learning
         self.games_trained = 0

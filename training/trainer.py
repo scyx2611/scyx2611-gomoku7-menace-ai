@@ -7,6 +7,7 @@ from typing import Callable
 
 from agents.base_agent import Agent
 from agents.menace_agent import MenaceAgent
+from agents.gradient_card_agent import GradientCardAgent
 from agents.pattern_menace_agent import PatternMenaceAgent
 from core.board import BLACK, COLOR_NAME, WHITE
 from core.board import IllegalMoveError
@@ -14,7 +15,7 @@ from core.game import Game
 from training.rewards import AI_LOSS, AI_WIN, DRAW
 
 ROLLING_WINDOW = 50
-LEARNING_AGENTS = (MenaceAgent, PatternMenaceAgent)
+LEARNING_AGENTS = (MenaceAgent, PatternMenaceAgent, GradientCardAgent)
 
 
 def is_learning_agent(agent: Agent) -> bool:
@@ -76,8 +77,10 @@ def build_record(game: Game, info: dict | None, *, game_id: str, experiment: str
         "result": result,
     }
     if is_learning_agent(ai):
-        rec["reward_params"] = ai.config.reward.to_dict()
-        rec["ai_options"] = {k: v for k, v in ai.config.to_dict().items() if k != "reward"}
+        cfg = ai.config.to_dict()
+        rec["reward_params"] = cfg["reward"] if "reward" in cfg else {
+            k: cfg[k] for k in ("alpha", "gamma", "win_return", "loss_return", "draw_return", "initial_weight")}
+        rec["ai_options"] = {k: v for k, v in cfg.items() if k != "reward"}
         rec["learning_enabled"] = ai.learning
         if include_learning and info is not None:
             rec["learning"] = info["steps"]
@@ -124,7 +127,14 @@ class Tally:
         }
 
 
-def run_games(ai: Agent, opponent: Agent, n_games: int, *, ai_color: int = BLACK, base_seed: int = 0,
+def color_for(ai_color, index: int) -> int:
+    """ai_color 可為 BLACK / WHITE，或 "alternate"（奇數局執黑、偶數局執白）。"""
+    if ai_color == "alternate":
+        return BLACK if index % 2 == 1 else WHITE
+    return ai_color
+
+
+def run_games(ai: Agent, opponent: Agent, n_games: int, *, ai_color: int | str = BLACK, base_seed: int = 0,
               phase: str = "train", experiment: str = "adhoc", logger=None, start_index: int = 1,
               tally: Tally | None = None, include_learning: bool = True,
               on_game: Callable[[dict], None] | None = None) -> list[dict]:
@@ -134,14 +144,17 @@ def run_games(ai: Agent, opponent: Agent, n_games: int, *, ai_color: int = BLACK
     for k in range(n_games):
         idx = start_index + k
         seed = game_seed(base_seed, phase, idx)
-        game, info = play_game(ai, opponent, ai_color, seed)
+        color = color_for(ai_color, idx)
+        game, info = play_game(ai, opponent, color, seed)
         game_id = f"{experiment}-{phase}-{idx:06d}"
-        result = result_for(game.winner, ai_color)
+        result = result_for(game.winner, color)
         if logger is not None:
             logger.write(build_record(game, info, game_id=game_id, experiment=experiment, phase=phase, ai=ai,
-                                      opponent=opponent, ai_color=ai_color, seed=seed,
+                                      opponent=opponent, ai_color=color, seed=seed,
                                       include_learning=include_learning))
         row = {"game_no": idx, "game_id": game_id, "result": result, "move_count": len(game.history),
+               **({"ai_color": COLOR_NAME[color]} if ai_color == "alternate" else {}),
+               **({"opponent_used": opponent.current.name} if hasattr(opponent, "current") else {}),
                **tally.add(result)}
         if is_learning_agent(ai):
             row["learned_entries"] = len(ai.memory)
@@ -152,4 +165,4 @@ def run_games(ai: Agent, opponent: Agent, n_games: int, *, ai_color: int = BLACK
     return rows
 
 
-__all__ = ["play_game", "run_games", "build_record", "Tally", "game_seed", "result_for", "BLACK", "WHITE"]
+__all__ = ["play_game", "run_games", "color_for", "build_record", "Tally", "game_seed", "result_for", "BLACK", "WHITE"]

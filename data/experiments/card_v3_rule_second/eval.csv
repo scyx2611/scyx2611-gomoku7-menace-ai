@@ -1,0 +1,12 @@
+after_train_games,label,opponent,ai_color,games,wins,losses,draws,win_rate,avg_moves,tactics_win,tactics_block,tactics_three
+0,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.92,0.0849,0.0894,0.0828
+1000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.08,0.0131,0.0319,0.0182
+2000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.14,0.0228,0.0216,0.0135
+3000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.0,0.0064,0.0211,0.0055
+4000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.0,0.0106,0.0253,0.0075
+5000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.0,0.0103,0.0218,0.0141
+6000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,13.0,0.0093,0.0211,0.0068
+7000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,16.78,0.0328,0.0206,0.0206
+8000,checkpoint,rule-deterministic,white,100,0,100,0,0.0,17.3,0.0908,0.0543,0.0441
+9000,checkpoint,rule-deterministic,white,100,3,80,17,0.03,26.05,0.1642,0.1165,0.1199
+10000,checkpoint,rule-deterministic,white,100,94,2,4,0.94,20.78,0.4195,0.2182,0.1566

@@ -18,6 +18,10 @@ class RewardConfig:
     min_weight: int = 1        # 牌數下限（設 0 允許把某位置完全移除）
     # 失敗時 AI「最後一手」（下完後對手直接五連）的懲罰；None 表示與 loss_penalty 相同
     final_loss_penalty: int | None = None
+    # 勝利時 AI「最後一手」（完成五連的那一手）的獎勵；None 表示與 win_reward 相同
+    final_win_reward: int | None = None
+    # 牌數上限；None 表示不設上限（避免少數常用棋形牌數無限增加，把其他棋形壓到機率接近 0）
+    max_weight: int | None = None
     # 存活獎勵（相對獎懲）：輸棋時若本局手數比「過去輸棋的平均手數」多，改給 +survival_reward
     survival_mode: bool = False
     survival_reward: int = 1
@@ -29,7 +33,10 @@ class RewardConfig:
         survival_mode 時需提供 game_length（本局總手數）與 reference_length（過去輸棋的平均手數）。
         """
         if result == AI_WIN:
-            return [self.win_reward] * n_steps
+            d = [self.win_reward] * n_steps
+            if n_steps and self.final_win_reward is not None:
+                d[-1] = self.final_win_reward
+            return d
         if result == DRAW:
             return [self.draw_reward] * n_steps
         if result == AI_LOSS:

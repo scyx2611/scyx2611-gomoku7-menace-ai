@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import math
+
 from core.board import SIZE
 
 
@@ -21,13 +23,16 @@ def str_to_action(s: str) -> int:
 
 
 class PositionCardMemory:
-    def __init__(self, initial_weight: int = 10, min_weight: int = 1):
+    def __init__(self, initial_weight: int = 10, min_weight: int = 1, max_weight: int | None = None):
         if initial_weight <= 0:
             raise ValueError("initial_weight 必須 > 0")
         if min_weight < 0:
             raise ValueError("min_weight 必須 >= 0")
+        if max_weight is not None and max_weight < max(initial_weight, min_weight):
+            raise ValueError("max_weight 不可小於 initial_weight 或 min_weight")
         self.initial_weight = initial_weight
         self.min_weight = min_weight
+        self.max_weight = max_weight
         self.states: dict[str, dict[int, int]] = {}  # 局面 -> {位置: 牌數}（僅記錄非初始值）
         self.visits: dict[str, int] = {}             # 局面 -> 被 AI 選擇過的次數
         self.deck_resets = 0                          # 全部牌數歸零而重設的次數
@@ -64,6 +69,8 @@ class PositionCardMemory:
         d = self.states.setdefault(key, {})
         before = d.get(action, self.initial_weight)
         after = max(self.min_weight, before + delta)
+        if self.max_weight is not None:
+            after = min(self.max_weight, after)
         if after == self.initial_weight:
             d.pop(action, None)
         else:
@@ -84,6 +91,7 @@ class PositionCardMemory:
         return {
             "initial_weight": self.initial_weight,
             "min_weight": self.min_weight,
+            "max_weight": self.max_weight,
             "deck_resets": self.deck_resets,
             "states": {k: {action_to_str(a): w for a, w in sorted(d.items())} for k, d in self.states.items()},
             "visits": self.visits,
@@ -91,7 +99,7 @@ class PositionCardMemory:
 
     @classmethod
     def from_dict(cls, data: dict) -> "PositionCardMemory":
-        m = cls(data["initial_weight"], data["min_weight"])
+        m = cls(data["initial_weight"], data["min_weight"], data.get("max_weight"))
         m.deck_resets = data.get("deck_resets", 0)
         m.states = {k: {str_to_action(a): int(w) for a, w in d.items()} for k, d in data["states"].items()}
         m.visits = {k: int(v) for k, v in data.get("visits", {}).items()}
@@ -163,13 +171,16 @@ class OpponentMemory:
 class PatternCardMemory:
     """棋形牌組：局部棋形 -> 牌數（修正後 AI 使用）。未出現過的棋形視為 initial_weight。"""
 
-    def __init__(self, initial_weight: int = 10, min_weight: int = 1):
+    def __init__(self, initial_weight: int = 10, min_weight: int = 1, max_weight: int | None = None):
         if initial_weight <= 0:
             raise ValueError("initial_weight 必須 > 0")
         if min_weight < 0:
             raise ValueError("min_weight 必須 >= 0")
+        if max_weight is not None and max_weight < max(initial_weight, min_weight):
+            raise ValueError("max_weight 不可小於 initial_weight 或 min_weight")
         self.initial_weight = initial_weight
         self.min_weight = min_weight
+        self.max_weight = max_weight
         self.cards: dict[str, int] = {}
         self.uses: dict[str, int] = {}
 
@@ -182,6 +193,8 @@ class PatternCardMemory:
     def adjust(self, key: str, delta: int) -> tuple[int, int]:
         before = self.cards.get(key, self.initial_weight)
         after = max(self.min_weight, before + delta)
+        if self.max_weight is not None:
+            after = min(self.max_weight, after)
         self.cards[key] = after
         self.uses[key] = self.uses.get(key, 0) + 1
         return before, after
@@ -191,11 +204,11 @@ class PatternCardMemory:
 
     def to_dict(self) -> dict:
         return {"initial_weight": self.initial_weight, "min_weight": self.min_weight,
-                "cards": self.cards, "uses": self.uses}
+                "max_weight": self.max_weight, "cards": self.cards, "uses": self.uses}
 
     @classmethod
     def from_dict(cls, data: dict) -> "PatternCardMemory":
-        m = cls(data["initial_weight"], data["min_weight"])
+        m = cls(data["initial_weight"], data["min_weight"], data.get("max_weight"))
         m.cards = {k: int(v) for k, v in data["cards"].items()}
         m.uses = {k: int(v) for k, v in data.get("uses", {}).items()}
         return m
@@ -252,4 +265,47 @@ class OpponentPatternMemory:
         m.seen = {k: int(v) for k, v in data.get("seen", {}).items()}
         m.chosen = {k: int(v) for k, v in data.get("chosen", {}).items()}
         m.observations = int(data.get("observations", 0))
+        return m
+
+
+class ThetaCardMemory:
+    """第三版的棋形牌：每張牌記錄一個「對數牌值」θ，實際牌數 = initial_weight × e^θ。
+
+    按比例增減牌數（例如 ×1.1）等於在 θ 上加減固定值，因此用 θ 儲存最直接；
+    報告與介面顯示的仍是牌數。未出現過的棋形 θ = 0，即 initial_weight 張。
+    """
+
+    def __init__(self, initial_weight: float = 10.0):
+        if initial_weight <= 0:
+            raise ValueError("initial_weight 必須 > 0")
+        self.initial_weight = initial_weight
+        self.theta: dict[str, float] = {}
+        self.uses: dict[str, int] = {}
+
+    def __len__(self) -> int:
+        return len(self.theta)
+
+    def get_theta(self, key: str) -> float:
+        return self.theta.get(key, 0.0)
+
+    def card(self, key: str) -> float:
+        return self.initial_weight * math.exp(self.theta.get(key, 0.0))
+
+    def add(self, key: str, delta: float) -> None:
+        self.theta[key] = self.theta.get(key, 0.0) + delta
+
+    def stats(self) -> dict:
+        cards = [self.card(k) for k in self.theta]
+        return {"learned_patterns": len(self.theta),
+                "max_card": round(max(cards), 2) if cards else None,
+                "min_card": round(min(cards), 4) if cards else None}
+
+    def to_dict(self) -> dict:
+        return {"initial_weight": self.initial_weight, "theta": self.theta, "uses": self.uses}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ThetaCardMemory":
+        m = cls(data["initial_weight"])
+        m.theta = {k: float(v) for k, v in data["theta"].items()}
+        m.uses = {k: int(v) for k, v in data.get("uses", {}).items()}
         return m

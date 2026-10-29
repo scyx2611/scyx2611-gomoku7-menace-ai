@@ -32,25 +32,34 @@ INK2 = "#52514e"
 GRID = "#e4e3df"
 C_IMPROVED = "#2a78d6"   # 修正後
 C_BASELINE = "#eb6834"   # 修正前
-C_THIRD = "#1baf7a"
+C_THIRD = "#1baf7a"     # 第二次修正
+C_YELLOW = "#eda100"
+C_MAGENTA = "#e87ba4"
+C_VIOLET = "#6250d6"
 ROLL = 200
 
 GROUP_LABEL = {
     "baseline_first": "修正前・先手",
-    "improved_first": "修正後・先手",
+    "improved_first": "第一次修正・先手",
     "baseline_second": "修正前・後手",
-    "improved_second": "修正後・後手",
+    "improved_second": "第一次修正・後手",
     "baseline_symmetry_first": "修正前＋對稱去重",
-    "improved_nosym_first": "修正後・關閉對稱合併",
+    "improved_nosym_first": "第一次修正・關閉對稱合併",
     "baseline_oppavoid_first": "修正前＋對手記憶避讓",
-    "improved_oppmem_first": "修正後＋對手記憶搶點",
-    "improved_sum_first": "修正後・牌數相加",
-    "improved_noloss_first": "修正後・只獎勵（敗 0）",
-    "improved_nowin_first": "修正後・只懲罰（勝 0）",
-    "improved_heavyloss_first": "修正後・加重懲罰（敗 -3）",
-    "improved_survival_first": "修正後＋存活獎勵",
+    "improved_oppmem_first": "第一次修正＋對手記憶搶點",
+    "improved_sum_first": "第一次修正・牌數相加",
+    "improved_noloss_first": "第一次修正・只獎勵（敗 0）",
+    "improved_nowin_first": "第一次修正・只懲罰（勝 0）",
+    "improved_heavyloss_first": "第一次修正・加重懲罰（敗 -3）",
+    "improved_survival_first": "第一次修正＋存活獎勵",
     "baseline_vs_random_first": "修正前・對隨機",
-    "improved_vs_random_first": "修正後・對隨機",
+    "card_v3_rule_first": "第二次修正・只對規則型先手",
+    "card_v3_rule_second": "第二次修正・只對規則型後手",
+    "card_v3_mixed": "第二次修正・混合對手",
+    "card_v3_selfplay": "第二次修正・純自我對弈",
+    "card_v3_line_mixed": "拆解：按比例增減＋舊棋形",
+    "window_additive_mixed": "拆解：新棋形＋整數加減",
+    "improved_vs_random_first": "第一次修正・對隨機",
 }
 
 
@@ -148,7 +157,7 @@ def chart_main(groups, path):
     ax.set_xlabel("訓練局數")
     ax.set_ylabel(f"勝率（%，最近 {ROLL} 局）")
     ax.set_ylim(-3, 103)
-    ax.set_title("主要實驗（種子 2026）：訓練勝率；圓點為凍結權重評估（100 局）", color=INK, loc="left")
+    ax.set_title("修正前 vs 第一次修正（種子 2026）：訓練勝率；圓點為凍結權重評估（100 局）", color=INK, loc="left")
     ax.legend(loc="upper left")
     fig.tight_layout(rect=(0, 0, 0.9, 1))
     fig.savefig(path, dpi=150)
@@ -200,7 +209,7 @@ def chart_groups(groups, names, path, title, colors=None):
     ax.set_ylabel(f"勝率（%，最近 {ROLL} 局）")
     ax.set_ylim(-3, 103)
     ax.set_title(title, color=INK, loc="left")
-    ax.legend(loc="upper left")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
     fig.tight_layout(rect=(0, 0, 0.86, 1))
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -253,8 +262,10 @@ def chart_length(groups, names, path):
 
 # ---- 表格 ------------------------------------------------------------------
 def table(headers: list[str], rows: list[list]) -> str:
-    out = ["| " + " | ".join(headers) + " |", "|" + "|".join("---" for _ in headers) + "|"]
-    out += ["| " + " | ".join(str(c) for c in r) + " |" for r in rows]
+    def cell(c) -> str:
+        return str(c).replace("|", "\\|")  # 棋形字串含「|」，需跳脫才不會被當成欄位分隔
+    out = ["| " + " | ".join(cell(h) for h in headers) + " |", "|" + "|".join("---" for _ in headers) + "|"]
+    out += ["| " + " | ".join(cell(c) for c in r) + " |" for r in rows]
     return "\n".join(out)
 
 
@@ -375,6 +386,178 @@ def board_text(moves: list[dict]) -> str:
     return "```\n" + g.board.render() + "\n```"
 
 
+# ---- 第二次修正 ---------------------------------------------------------------
+V3_GROUPS = ["card_v3_mixed", "card_v3_selfplay", "card_v3_line_mixed", "window_additive_mixed",
+             "card_v3_rule_first", "card_v3_rule_second"]
+
+
+def _load_model(path: str):
+    from agents.gradient_card_agent import GradientCardAgent
+    from agents.menace_agent import MenaceAgent
+    from agents.pattern_menace_agent import PatternMenaceAgent
+    with open(os.path.join(ROOT, path), encoding="utf-8") as f:
+        data = json.load(f)
+    cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent}.get(
+        data.get("format"), MenaceAgent)
+    return cls.from_dict(data, learning=False)
+
+
+def group_tactics(groups, gname: str, max_seeds: int | None = None) -> list[dict]:
+    from training.tactics import tactical_score
+    out = []
+    for s in groups.get(gname, [])[:max_seeds]:
+        out.append(s["tactics"] if "tactics" in s else tactical_score(_load_model(s["files"]["model"])))
+    return out
+
+
+def tactics_table(groups) -> str:
+    from training.tactics import KIND_LABEL, KINDS, UniformBaseline, tactical_score
+    rows = []
+    u = tactical_score(UniformBaseline())
+    rows.append(["完全亂下（對照）", "—"] + [fmt_rate(u[k]["prob"]) for k in KINDS])
+    for gname, n in [("baseline_first", 1), ("improved_first", None), ("card_v3_rule_first", None),
+                     ("card_v3_mixed", None), ("card_v3_selfplay", None), ("card_v3_line_mixed", None),
+                     ("window_additive_mixed", None)]:
+        ts = group_tactics(groups, gname, n)
+        if not ts:
+            continue
+        cells = []
+        for k in KINDS:
+            vals = [t[k]["prob"] for t in ts]
+            m = statistics.mean(vals)
+            cells.append(fmt_rate(m) + (f"（{fmt_rate(min(vals))}～{fmt_rate(max(vals))}）" if len(vals) > 1 else ""))
+        rows.append([GROUP_LABEL.get(gname, gname), len(ts)] + cells)
+    return table(["設定", "種子數"] + [f"{KIND_LABEL[k]}：抽中正解的機率" for k in KINDS], rows)
+
+
+def v3_eval_table(groups, names: list[str], color_suffix: str) -> str:
+    labels = []
+    for g in names:
+        for s in groups.get(g, []):
+            for e in s.get("final_eval", []):
+                if e["label"].endswith(color_suffix) and e["label"] not in labels:
+                    labels.append(e["label"])
+    rows = []
+    for g in names:
+        runs = groups.get(g, [])
+        if not runs:
+            continue
+        row = [GROUP_LABEL.get(g, g), len(runs)]
+        for lab in labels:
+            es = [e for s in runs for e in s.get("final_eval", []) if e["label"] == lab and "win_rate" in e]
+            if not es:
+                row.append("—")
+                continue
+            w = statistics.mean(e["wins"] / e["games"] for e in es)
+            d = statistics.mean(e["draws"] / e["games"] for e in es)
+            row.append(f"{w * 100:.1f}% / {d * 100:.1f}%")
+        rows.append(row)
+    return table(["設定", "種子數"] + [l.replace(color_suffix, "") for l in labels], rows)
+
+
+def chart_tactics_curve(groups, path) -> None:
+    fig, ax = plt.subplots(figsize=(9, 4.6))
+    series = [("card_v3_mixed", C_THIRD), ("card_v3_selfplay", C_VIOLET), ("card_v3_line_mixed", C_YELLOW),
+              ("window_additive_mixed", C_MAGENTA)]
+    ends = []
+    for gname, color in series:
+        runs = groups.get(gname, [])
+        if not runs:
+            continue
+        curves = []
+        for s in runs:
+            pts = {}
+            for c in s["checkpoints"]:
+                if "tactics_win" in c:
+                    pts[c["after_train_games"]] = (c["tactics_win"] + c["tactics_block"] + c["tactics_three"]) / 3
+            curves.append(sorted(pts.items()))
+        xs = [x for x, _ in curves[0]]
+        for cv in curves:
+            ax.plot(xs, [y * 100 for _, y in cv], color=color, lw=1, alpha=0.35)
+        mean = [statistics.mean(cv[i][1] for cv in curves) * 100 for i in range(len(xs))]
+        ax.plot(xs, mean, color=color, lw=2.2, label=GROUP_LABEL[gname])
+        ends.append((xs[-1] * 1.01, mean[-1], GROUP_LABEL[gname]))
+    ax.axhline(8.6, color=INK2, lw=1, ls="--")
+    ax.annotate("完全亂下 ≈ 8.6%", (0, 8.6), xytext=(4, 4), textcoords="offset points", color=INK2, fontsize=9)
+    _label_ends(ax, ends)
+    ax.set_xlabel("訓練局數")
+    ax.set_ylabel("攻防測驗：三類題目抽中正解的平均機率（%）")
+    ax.set_ylim(0, 100)
+    ax.set_title("第二次修正：攻防測驗分數（粗線 = 3 個種子平均，細線 = 各種子）", color=INK, loc="left")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
+    fig.tight_layout(rect=(0, 0, 0.8, 1))
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
+def weight_example_v3(name: str) -> str:
+    path = os.path.join(ROOT, "data", "matches", f"{name}_train.jsonl")
+    if not os.path.exists(path):
+        return "（找不到棋譜）"
+    for rec in read_matches(path):
+        if rec["result"] == "ai_win":
+            rows = [[st["move_no"], f"({st['action'][0]},{st['action'][1]})", " / ".join(st["patterns"]),
+                     " / ".join(f"{c:.2f}" for c in st["cards_before"]),
+                     " / ".join(f"{c:.2f}" for c in st["cards_after"]), f"{st['prob'] * 100:.2f}%",
+                     f"{st['delta_theta']:+.4f}"] for st in rec["learning"]]
+            return (f"第一場勝局 `{rec['game_id']}`（共 {rec['move_count']} 手）。棋形「攻,n|守,n」：攻 = 此方向未被擋的五格內"
+                    "自己最多幾子（-1 表示已無法連五），守 = 對手最多幾子，n = 達到最大值的五格數（1 或 2 以上）。\n\n"
+                    + table(["第幾手", "AI 選擇", "四個方向的棋形", "棋形牌數（前）", "棋形牌數（後）", "抽中機率",
+                             "θ 調整量 g"], rows))
+    return "訓練期間沒有勝局。"
+
+
+def v3_sections(summaries, groups, figs) -> list[str]:
+    if not groups.get("card_v3_mixed") and not groups.get("card_v3_rule_first"):
+        return []
+    md = ["## 10. 第二次修正：棋形計數牌＋按比例增減牌數", "",
+          "第一次修正後的 AI 對訓練對手有勝率，但只是背下了打敗那個固定對手的路線。"
+          "下面的「攻防測驗」從實際對局取出「能連五」「必須擋四」「該擋活三」三類題目各 200 題，"
+          "計算 AI 依位子牌抽中正確位置的機率（規則只用來出題評分，不參與學習）。", "",
+          "### 10.1 攻防測驗", "", tactics_table(groups), "",
+          f"![攻防測驗學習曲線]({figs['tactics']})", ""]
+    md += ["### 10.2 與前兩版相同條件：只對確定性規則型對手", "",
+           f"![三版學習曲線]({figs['v3rule']})", "",
+           group_mean_table(groups, ["baseline_first", "improved_first", "card_v3_rule_first",
+                                     "baseline_second", "improved_second", "card_v3_rule_second"]), "",
+           seed_table(groups, ["card_v3_rule_first", "card_v3_rule_second"]), ""]
+    names = V3_GROUPS
+    md += ["### 10.3 對各種對手的評估（凍結權重，各種子平均：勝率 / 和局率）", "",
+           "AI 先手：", "", v3_eval_table(groups, names, "・AI 先手"), "",
+           "AI 後手：", "", v3_eval_table(groups, names, "・AI 後手"), ""]
+    rows = []
+    for g in ["card_v3_mixed", "card_v3_selfplay", "card_v3_line_mixed", "window_additive_mixed"]:
+        for s in groups.get(g, []):
+            last = [c for c in s["checkpoints"] if c["after_train_games"] == s["training"]["games"]]
+            row = [GROUP_LABEL[g], s["seed"]]
+            for c in last:
+                row.append(f"{fmt_rate(c['win_rate'])} / 和 {fmt_rate(c['draws'] / c['games'])}")
+            rows.append(row)
+    if rows:
+        labels = [c["label"] for c in groups["card_v3_mixed"][0]["checkpoints"]
+                  if c["after_train_games"] == groups["card_v3_mixed"][0]["training"]["games"]]
+        md += ["訓練結束時的檢查點評估（每項 100 局）：", "", table(["設定", "種子"] + labels, rows), ""]
+    mx = summaries.get("card_v3_mixed")
+    if mx:
+        ls = mx["learning_stats"]
+        md += ["### 10.4 學到的牌", "",
+               f"混合對手主實驗（種子 2026）共 {ls['learned_patterns']} 種棋形牌。牌數最多與最少的棋形：", "",
+               table(["棋形（攻,n|守,n）", "牌數"], [[c["pattern"], f"{c['card']:.2f}"] for c in ls["top_cards"]]
+                     + [["…", ""]] + [[c["pattern"], f"{c['card']:.4f}"] for c in ls["bottom_cards"]]), ""]
+    md += ["### 10.5 牌數變化實例", "", weight_example_v3("card_v3_rule_first"), ""]
+    rf = summaries.get("card_v3_rule_first")
+    if rf:
+        rows = load_train("card_v3_rule_first")
+        wins = [r["game_no"] for r in rows if r["result"] == "ai_win"]
+        md += ["### 10.6 由敗至贏紀錄", "",
+               f"- **第二次修正・只對規則型先手**：棋譜 `{rf['files']['train_jsonl']}`；勝局共 {len(wins)} 局；"
+               f"前 10 場勝局局號：{', '.join(wins[:10]) or '無'}"]
+        if mx:
+            md += [f"- **第二次修正・混合對手**：棋譜 `{mx['files']['train_jsonl']}`（含每一手的牌數變化）"]
+        md += [""]
+    return md
+
+
 def build_report() -> str:
     _setup_font()
     os.makedirs(OUT, exist_ok=True)
@@ -386,7 +569,7 @@ def build_report() -> str:
     figs = {
         "main": "learning_curve.png", "seeds": "learning_curve_seeds.png", "color": "first_second.png",
         "sym": "symmetry.png", "rewards": "reward_variants.png", "length": "game_length.png",
-        "opp": "opponent_memory.png",
+        "opp": "opponent_memory.png", "tactics": "v3_tactics_curve.png", "v3rule": "v3_rule_first.png",
     }
     chart_main(groups, os.path.join(OUT, figs["main"]))
     chart_seeds(groups, os.path.join(OUT, figs["seeds"]))
@@ -402,6 +585,13 @@ def build_report() -> str:
     chart_length(groups, ["improved_first", "improved_survival_first", "baseline_first"],
                  os.path.join(OUT, figs["length"]))
 
+    if groups.get("card_v3_mixed"):
+        chart_tactics_curve(groups, os.path.join(OUT, figs["tactics"]))
+    if groups.get("card_v3_rule_first"):
+        chart_groups(groups, ["baseline_first", "improved_first", "card_v3_rule_first"],
+                     os.path.join(OUT, figs["v3rule"]), "三個版本：只對確定性規則型、AI 先手（種子 2026）",
+                     colors=[C_BASELINE, C_IMPROVED, C_THIRD])
+
     b = summaries.get("baseline_first")
     i = summaries.get("improved_first")
     md = ["# 7×7 五子棋位子牌學習 AI：實驗結果（自動產生）", "",
@@ -413,9 +603,9 @@ def build_report() -> str:
           "- 訓練對手：確定性規則型對手（能連五就連、對手要連五就擋，否則下最靠近中央的空位）。", ""]
 
     if b and i:
-        md += ["## 1. 修正前 vs 修正後（主要實驗，種子 2026，AI 先手）", "",
+        md += ["## 1. 修正前 vs 第一次修正（主要實驗，種子 2026，AI 先手）", "",
                f"![學習曲線]({figs['main']})", "",
-               table(["", "修正前（整盤局面位子牌）", "修正後（棋形位子牌）"], [
+               table(["", "修正前（整盤局面位子牌）", "第一次修正（棋形位子牌）"], [
                    ["訓練局數", b["training"]["games"], i["training"]["games"]],
                    ["訓練勝 / 敗 / 和", f"{b['training']['wins']} / {b['training']['losses']} / {b['training']['draws']}",
                     f"{i['training']['wins']} / {i['training']['losses']} / {i['training']['draws']}"],
@@ -428,8 +618,8 @@ def build_report() -> str:
                "每 500 局一段的訓練勝率：", "",
                table(["局數"] + [x["games"] for x in i["training_segments"]],
                      [["修正前"] + [fmt_rate(x["win_rate"]) for x in b["training_segments"]],
-                      ["修正後"] + [fmt_rate(x["win_rate"]) for x in i["training_segments"]]]), "",
-               "### 訓練後評估（凍結權重）", "", "修正前：", "", final_eval_table(b), "", "修正後：", "",
+                      ["第一次修正"] + [fmt_rate(x["win_rate"]) for x in i["training_segments"]]]), "",
+               "### 訓練後評估（凍結權重）", "", "修正前：", "", final_eval_table(b), "", "第一次修正：", "",
                final_eval_table(i), ""]
 
     md += ["## 2. 多個亂數種子", "", f"![各種子學習曲線]({figs['seeds']})", "",
@@ -457,7 +647,7 @@ def build_report() -> str:
             ls = s["learning_stats"]
             rows.append([GROUP_LABEL[gname], s["seed"], ls.get("learned_patterns"), ls.get("patterns_above_initial"),
                          ls.get("patterns_below_initial")])
-    md += ["修正後（棋形）的棋形牌數量：", "",
+    md += ["第一次修正（棋形）的棋形牌數量：", "",
            table(["設定", "種子", "棋形牌數", "高於初始值", "低於初始值"], rows), ""]
 
     md += ["## 5. 對手記憶", "", f"![對手記憶]({figs['opp']})", "",
@@ -501,7 +691,7 @@ def build_report() -> str:
     md += ["## 8. 權重變化實例", "", "### 修正前：第 1 局（每個局面的牌組都是新的）", "",
            weight_example_baseline("baseline_first"), ""]
     txt, first_win = weight_example_pattern("improved_first")
-    md += ["### 修正後：第一場勝局的棋形牌變化", "", txt, ""]
+    md += ["### 第一次修正：第一場勝局的棋形牌變化", "", txt, ""]
     if first_win:
         md += ["第一場勝局的終局盤面（X = 黑/AI 先手，O = 白/對手）：", "", board_text(first_win["moves"]), ""]
 
@@ -516,7 +706,9 @@ def build_report() -> str:
                f"前 10 場勝局局號：{', '.join(wins[:10]) or '無'}"]
     md += ["", "重播任一局：`python main.py replay data/matches/improved_first_train.jsonl improved_first-train-000123 --step`", ""]
 
-    md += ["## 10. 全部實驗一覽", "",
+    md += v3_sections(summaries, groups, figs)
+
+    md += ["## 11. 全部實驗一覽", "",
            table(["實驗", "說明", "種子", "勝率", "首次勝利", "穩定勝利", "用時（秒）"],
                  [[s["name"], s["description"], s["seed"], fmt_rate(s["training"]["win_rate"]),
                    fmt(s["training"]["first_win_game"]), fmt(s["training"]["stable_win_game"]), s["elapsed_sec"]]

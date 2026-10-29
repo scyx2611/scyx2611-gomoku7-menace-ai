@@ -6,6 +6,7 @@ import random
 
 import pytest
 
+from agents.gradient_card_agent import GradientCardAgent, GradientCardConfig
 from agents.heuristic_agent import HeuristicAgent
 from agents.menace_agent import MenaceAgent, MenaceConfig
 from agents.minimax_agent import MinimaxAgent
@@ -27,6 +28,9 @@ def learning_agents():
         MenaceAgent(MenaceConfig(use_symmetry=True, opponent_model="avoid"), seed=1),
         PatternMenaceAgent(PatternMenaceConfig(), seed=1),
         PatternMenaceAgent(PatternMenaceConfig(use_symmetry=False, combine="sum", opponent_model="preempt"), seed=1),
+        PatternMenaceAgent(PatternMenaceConfig(features="window"), seed=1),
+        GradientCardAgent(GradientCardConfig(), seed=1),
+        GradientCardAgent(GradientCardConfig(features="line"), seed=1),
     ]
 
 
@@ -121,7 +125,8 @@ def test_save_load_round_trip(agent, tmp_path):
 
 # ---- 11. 先手 / 後手 ---------------------------------------------------------
 @pytest.mark.parametrize("color", [BLACK, WHITE])
-@pytest.mark.parametrize("make", [lambda: MenaceAgent(seed=1), lambda: PatternMenaceAgent(seed=1)])
+@pytest.mark.parametrize("make", [lambda: MenaceAgent(seed=1), lambda: PatternMenaceAgent(seed=1),
+                                  lambda: GradientCardAgent(seed=1)])
 def test_ai_plays_as_first_or_second(color, make):
     ai = make()
     rows = run_games(ai, HeuristicAgent("pattern"), 10, ai_color=color, base_seed=4)
@@ -241,3 +246,62 @@ def test_gzip_match_log(tmp_path):
         run_games(RandomAgent(seed=1), RandomAgent(seed=2), 5, logger=log)
     recs = list(read_matches(path))
     assert len(recs) == 5 and all(replay(r["moves"]).is_over for r in recs)
+
+
+# ---- 第二次修正：第三版 AI、自我對弈、混合對手、攻防測驗 -----------------------------
+@pytest.mark.parametrize("result,direction", [("win", 1), ("loss", -1)])
+def test_card_pg_update_moves_chosen_probability_in_right_direction(result, direction):
+    ai = GradientCardAgent(seed=3)
+    b = Board()
+    b.place(3, 3, WHITE)
+    ai.start_game(BLACK, 1)
+    move = ai.select_move(b, BLACK)
+    before = ai.move_probabilities(b, BLACK)[move]
+    ai.end_game(BLACK if result == "win" else WHITE, BLACK)
+    after = ai.move_probabilities(b, BLACK)[move]
+    assert (after - before) * direction > 0
+    assert ai.steps[0]["cards_after"] != ai.steps[0]["cards_before"]
+
+
+def test_card_pg_draw_changes_nothing():
+    ai = GradientCardAgent(seed=3)
+    ai.start_game(BLACK, 1)
+    ai.select_move(Board(), BLACK)
+    ai.end_game(None, BLACK)
+    assert all(abs(v) < 1e-12 for v in ai.memory.theta.values())
+
+
+def test_twin_shares_cards_and_self_play_learns():
+    ai = GradientCardAgent(seed=1)
+    tw = ai.twin()
+    assert tw.memory is ai.memory and tw.opponent_memory is ai.opponent_memory
+    run_games(ai, tw, 20, ai_color="alternate", base_seed=2)
+    assert len(ai.memory) > 0 and ai.games_trained == 20 and tw.games_trained == 20
+
+
+def test_mixed_opponent_and_alternating_colors():
+    from agents.mixed_opponent import MixedOpponent
+    ai = GradientCardAgent(seed=1)
+    opp = MixedOpponent([(RandomAgent(seed=1, name="r"), 1.0), (HeuristicAgent("basic", name="h"), 1.0)], seed=5)
+    rows = run_games(ai, opp, 40, ai_color="alternate", base_seed=3)
+    assert {r["opponent_used"] for r in rows} == {"r", "h"}
+    assert [r["ai_color"] for r in rows[:4]] == ["black", "white", "black", "white"]
+
+
+def test_tactics_benchmark_classifies_and_scores():
+    from training.tactics import UniformBaseline, classify, tactical_score
+    b = Board()
+    for c in range(4):
+        b.place(3, c, BLACK)
+    for c in range(3):
+        b.place(5, c, WHITE)
+    assert classify(b, BLACK) == ("win", [3 * 7 + 4])
+    assert classify(b, WHITE)[0] == "block"
+    b2 = Board()
+    for c in (2, 3, 4):
+        b2.place(3, c, WHITE)
+    b2.place(0, 0, BLACK)
+    kind, ans = classify(b2, BLACK)
+    assert kind == "three" and set(ans) == {3 * 7 + 1, 3 * 7 + 5}
+    s = tactical_score(UniformBaseline(), n_per_kind=20)
+    assert all(0.02 < s[k]["prob"] < 0.2 for k in ("win", "block", "three"))

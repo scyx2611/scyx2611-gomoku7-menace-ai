@@ -1,0 +1,1247 @@
+{
+  "defaults": {
+    "eval_every": 1000,
+    "eval_games": 100,
+    "segment": 1000,
+    "rolling_window": 50,
+    "stable_threshold": 0.5,
+    "final_eval_games": 200,
+    "tactics": true,
+    "final_eval": [
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic",
+        "ai_color": "black",
+        "label": "規則型（確定性）・AI 先手"
+      },
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic",
+        "ai_color": "white",
+        "label": "規則型（確定性）・AI 後手"
+      },
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": false,
+        "name": "rule-stochastic",
+        "ai_color": "black",
+        "label": "規則型（隨機版）・AI 先手"
+      },
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": false,
+        "name": "rule-stochastic",
+        "ai_color": "white",
+        "label": "規則型（隨機版）・AI 後手"
+      },
+      {
+        "type": "heuristic",
+        "level": "pattern",
+        "deterministic": true,
+        "name": "pattern-deterministic",
+        "ai_color": "black",
+        "label": "棋形計分規則型・AI 先手"
+      },
+      {
+        "type": "heuristic",
+        "level": "pattern",
+        "deterministic": true,
+        "name": "pattern-deterministic",
+        "ai_color": "white",
+        "label": "棋形計分規則型・AI 後手"
+      },
+      {
+        "type": "heuristic",
+        "level": "pattern",
+        "deterministic": false,
+        "ai_color": "black",
+        "label": "棋形計分規則型（隨機版）・AI 先手"
+      },
+      {
+        "type": "heuristic",
+        "level": "pattern",
+        "deterministic": false,
+        "ai_color": "white",
+        "label": "棋形計分規則型（隨機版）・AI 後手"
+      },
+      {
+        "type": "random",
+        "ai_color": "black",
+        "label": "隨機・AI 先手"
+      },
+      {
+        "type": "random",
+        "ai_color": "white",
+        "label": "隨機・AI 後手"
+      },
+      {
+        "type": "minimax",
+        "depth": 2,
+        "ai_color": "black",
+        "label": "Minimax 深度 2・AI 先手"
+      },
+      {
+        "type": "minimax",
+        "depth": 2,
+        "ai_color": "white",
+        "label": "Minimax 深度 2・AI 後手"
+      },
+      {
+        "type": "rapfi",
+        "max_node": 20000,
+        "games": 100,
+        "ai_color": "black",
+        "label": "Rapfi（外部引擎）・AI 先手"
+      },
+      {
+        "type": "rapfi",
+        "max_node": 20000,
+        "games": 100,
+        "ai_color": "white",
+        "label": "Rapfi（外部引擎）・AI 後手"
+      }
+    ]
+  },
+  "experiments": [
+    {
+      "name": "card_v3_rule_first",
+      "group": "card_v3_rule_first",
+      "description": "第二次修正：只對確定性規則型、AI 先手（與前兩版相同條件）",
+      "seed": 2026,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "black",
+      "train_games": 10000,
+      "log_learning": true,
+      "compress_logs": false
+    },
+    {
+      "name": "card_v3_rule_first_seed2027",
+      "group": "card_v3_rule_first",
+      "description": "第二次修正：只對確定性規則型、AI 先手（與前兩版相同條件）",
+      "seed": 2027,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "black",
+      "train_games": 10000,
+      "log_learning": false,
+      "compress_logs": true
+    },
+    {
+      "name": "card_v3_rule_first_seed2028",
+      "group": "card_v3_rule_first",
+      "description": "第二次修正：只對確定性規則型、AI 先手（與前兩版相同條件）",
+      "seed": 2028,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "black",
+      "train_games": 10000,
+      "log_learning": false,
+      "compress_logs": true
+    },
+    {
+      "name": "card_v3_rule_second",
+      "group": "card_v3_rule_second",
+      "description": "第二次修正：只對確定性規則型、AI 後手",
+      "seed": 2026,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "white",
+      "train_games": 10000,
+      "log_learning": false,
+      "compress_logs": true
+    },
+    {
+      "name": "card_v3_rule_second_seed2027",
+      "group": "card_v3_rule_second",
+      "description": "第二次修正：只對確定性規則型、AI 後手",
+      "seed": 2027,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "white",
+      "train_games": 10000,
+      "log_learning": false,
+      "compress_logs": true
+    },
+    {
+      "name": "card_v3_rule_second_seed2028",
+      "group": "card_v3_rule_second",
+      "description": "第二次修正：只對確定性規則型、AI 後手",
+      "seed": 2028,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      },
+      "ai_color": "white",
+      "train_games": 10000,
+      "log_learning": false,
+      "compress_logs": true
+    },
+    {
+      "name": "card_v3_mixed",
+      "group": "card_v3_mixed",
+      "description": "第二次修正：混合對手＋自我對弈、先後手輪流",
+      "seed": 2026,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": true,
+      "compress_logs": false,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_mixed_seed2027",
+      "group": "card_v3_mixed",
+      "description": "第二次修正：混合對手＋自我對弈、先後手輪流",
+      "seed": 2027,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_mixed_seed2028",
+      "group": "card_v3_mixed",
+      "description": "第二次修正：混合對手＋自我對弈、先後手輪流",
+      "seed": 2028,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_selfplay",
+      "group": "card_v3_selfplay",
+      "description": "第二次修正：純自我對弈、先後手輪流",
+      "seed": 2026,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "self",
+        "name": "self-play"
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_selfplay_seed2027",
+      "group": "card_v3_selfplay",
+      "description": "第二次修正：純自我對弈、先後手輪流",
+      "seed": 2027,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "self",
+        "name": "self-play"
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_selfplay_seed2028",
+      "group": "card_v3_selfplay",
+      "description": "第二次修正：純自我對弈、先後手輪流",
+      "seed": 2028,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "window",
+          "version": "card-pg-1.0"
+        }
+      },
+      "opponent": {
+        "type": "self",
+        "name": "self-play"
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_line_mixed",
+      "group": "card_v3_line_mixed",
+      "description": "拆解：按比例增減，但棋形用第二版的完整排列",
+      "seed": 2026,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "line",
+          "version": "card-pg-1.0-line"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_line_mixed_seed2027",
+      "group": "card_v3_line_mixed",
+      "description": "拆解：按比例增減，但棋形用第二版的完整排列",
+      "seed": 2027,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "line",
+          "version": "card-pg-1.0-line"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "card_v3_line_mixed_seed2028",
+      "group": "card_v3_line_mixed",
+      "description": "拆解：按比例增減，但棋形用第二版的完整排列",
+      "seed": 2028,
+      "ai": {
+        "type": "card_pg",
+        "config": {
+          "initial_weight": 10.0,
+          "alpha": 0.1,
+          "gamma": 0.9,
+          "win_return": 1.0,
+          "loss_return": -1.0,
+          "draw_return": 0.0,
+          "features": "line",
+          "version": "card-pg-1.0-line"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "window_additive_mixed",
+      "group": "window_additive_mixed",
+      "description": "拆解：視窗計數棋形，但用第二版的整數加減牌（勝 +1、敗 -1）",
+      "seed": 2026,
+      "ai": {
+        "type": "pattern_menace",
+        "config": {
+          "reward": {
+            "win_reward": 1,
+            "loss_penalty": 1,
+            "draw_reward": 0,
+            "initial_weight": 10,
+            "min_weight": 1
+          },
+          "combine": "product",
+          "features": "window",
+          "use_symmetry": true,
+          "version": "pattern-menace-1.0-window"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "window_additive_mixed_seed2027",
+      "group": "window_additive_mixed",
+      "description": "拆解：視窗計數棋形，但用第二版的整數加減牌（勝 +1、敗 -1）",
+      "seed": 2027,
+      "ai": {
+        "type": "pattern_menace",
+        "config": {
+          "reward": {
+            "win_reward": 1,
+            "loss_penalty": 1,
+            "draw_reward": 0,
+            "initial_weight": 10,
+            "min_weight": 1
+          },
+          "combine": "product",
+          "features": "window",
+          "use_symmetry": true,
+          "version": "pattern-menace-1.0-window"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    },
+    {
+      "name": "window_additive_mixed_seed2028",
+      "group": "window_additive_mixed",
+      "description": "拆解：視窗計數棋形，但用第二版的整數加減牌（勝 +1、敗 -1）",
+      "seed": 2028,
+      "ai": {
+        "type": "pattern_menace",
+        "config": {
+          "reward": {
+            "win_reward": 1,
+            "loss_penalty": 1,
+            "draw_reward": 0,
+            "initial_weight": 10,
+            "min_weight": 1
+          },
+          "combine": "product",
+          "features": "window",
+          "use_symmetry": true,
+          "version": "pattern-menace-1.0-window"
+        }
+      },
+      "opponent": {
+        "type": "mixed",
+        "name": "mixed",
+        "pool": [
+          {
+            "type": "self",
+            "weight": 0.5,
+            "name": "self-play"
+          },
+          {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "weight": 0.2,
+            "name": "rule-stochastic"
+          },
+          {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": false,
+            "epsilon": 0.2,
+            "weight": 0.2,
+            "name": "pattern-eps0.2"
+          },
+          {
+            "type": "random",
+            "weight": 0.1,
+            "name": "random"
+          }
+        ]
+      },
+      "ai_color": "alternate",
+      "train_games": 20000,
+      "log_learning": false,
+      "compress_logs": true,
+      "checkpoint_eval": [
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "black",
+          "label": "規則型隨機版・AI 先手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "basic",
+            "deterministic": false,
+            "name": "rule-stochastic"
+          },
+          "ai_color": "white",
+          "label": "規則型隨機版・AI 後手"
+        },
+        {
+          "spec": {
+            "type": "heuristic",
+            "level": "pattern",
+            "deterministic": true,
+            "name": "pattern-deterministic"
+          },
+          "ai_color": "black",
+          "label": "棋形計分規則型・AI 先手"
+        }
+      ]
+    }
+  ]
+}
