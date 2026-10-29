@@ -1,0 +1,1 @@
+# scyx2611-gomoku7-menace-ai
