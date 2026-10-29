@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.tmp
+dist/
+engines/rapfi/pbrain-rapfi
+engines/rapfi/pbrain-rapfi.exe

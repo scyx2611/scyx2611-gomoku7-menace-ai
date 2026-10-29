@@ -1,0 +1,93 @@
+{
+  "defaults": {
+    "seed": 2026,
+    "train_games": 300,
+    "eval_every": 100,
+    "eval_games": 20,
+    "segment": 100,
+    "rolling_window": 50,
+    "stable_threshold": 0.5,
+    "log_learning": true,
+    "final_eval_games": 20,
+    "final_eval": [
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "label": "規則型（確定性，訓練對手）"
+      },
+      {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": false,
+        "label": "規則型（隨機版）"
+      },
+      {
+        "type": "heuristic",
+        "level": "pattern",
+        "deterministic": true,
+        "label": "棋形計分規則型"
+      },
+      {
+        "type": "random",
+        "label": "隨機"
+      }
+    ]
+  },
+  "experiments": [
+    {
+      "name": "smoke_baseline",
+      "description": "快速冒煙測試",
+      "ai": {
+        "type": "menace",
+        "config": {
+          "reward": {
+            "win_reward": 3,
+            "loss_penalty": 1,
+            "draw_reward": 1,
+            "initial_weight": 10,
+            "min_weight": 1
+          },
+          "use_symmetry": false,
+          "opponent_model": "off",
+          "version": "menace-1.0"
+        }
+      },
+      "ai_color": "black",
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      }
+    },
+    {
+      "name": "smoke_improved",
+      "description": "快速冒煙測試",
+      "ai": {
+        "type": "pattern_menace",
+        "config": {
+          "reward": {
+            "win_reward": 3,
+            "loss_penalty": 1,
+            "draw_reward": 1,
+            "initial_weight": 10,
+            "min_weight": 1
+          },
+          "combine": "product",
+          "radius": 4,
+          "use_symmetry": true,
+          "opponent_model": "off",
+          "version": "pattern-menace-1.0"
+        }
+      },
+      "ai_color": "black",
+      "opponent": {
+        "type": "heuristic",
+        "level": "basic",
+        "deterministic": true,
+        "name": "rule-deterministic"
+      }
+    }
+  ]
+}

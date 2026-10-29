@@ -1,0 +1,73 @@
+{
+  "train_games": 10000,
+  "eval_every": 500,
+  "eval_games": 100,
+  "segment": 500,
+  "rolling_window": 50,
+  "stable_threshold": 0.5,
+  "final_eval_games": 200,
+  "final_eval": [
+    {
+      "type": "heuristic",
+      "level": "basic",
+      "deterministic": true,
+      "label": "規則型（確定性，訓練對手）"
+    },
+    {
+      "type": "heuristic",
+      "level": "basic",
+      "deterministic": false,
+      "label": "規則型（隨機版）"
+    },
+    {
+      "type": "heuristic",
+      "level": "pattern",
+      "deterministic": true,
+      "label": "棋形計分規則型"
+    },
+    {
+      "type": "random",
+      "label": "隨機"
+    },
+    {
+      "type": "minimax",
+      "depth": 2,
+      "label": "Minimax 深度 2"
+    },
+    {
+      "type": "rapfi",
+      "max_node": 20000,
+      "label": "Rapfi（外部引擎）",
+      "games": 100
+    }
+  ],
+  "name": "baseline_vs_random_first",
+  "group": "baseline_vs_random_first",
+  "description": "修正前，對隨機對手",
+  "seed": 2026,
+  "ai": {
+    "type": "menace",
+    "config": {
+      "reward": {
+        "win_reward": 3,
+        "loss_penalty": 1,
+        "draw_reward": 1,
+        "initial_weight": 10,
+        "min_weight": 1
+      },
+      "use_symmetry": false,
+      "opponent_model": "off",
+      "version": "menace-1.0"
+    }
+  },
+  "ai_color": "black",
+  "opponent": {
+    "type": "random",
+    "name": "random"
+  },
+  "log_learning": false,
+  "compress_logs": true,
+  "_started": "2026-10-29T03:30:34",
+  "_python": "3.13.17",
+  "_platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39"
+}

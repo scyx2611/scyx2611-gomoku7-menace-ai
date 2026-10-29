@@ -1,0 +1,505 @@
+{
+  "name": "improved_survival_first",
+  "group": "improved_survival_first",
+  "description": "修正後 + 存活獎勵（輸棋但比平均撐得久 +1）",
+  "ai": {
+    "type": "pattern_menace",
+    "name": "pattern-menace",
+    "version": "pattern-menace-1.0",
+    "params": {
+      "reward": {
+        "win_reward": 3,
+        "loss_penalty": 1,
+        "draw_reward": 1,
+        "initial_weight": 10,
+        "min_weight": 1,
+        "final_loss_penalty": null,
+        "survival_mode": true,
+        "survival_reward": 1
+      },
+      "combine": "product",
+      "radius": 4,
+      "use_symmetry": true,
+      "opponent_model": "off",
+      "preempt_strength": 4.0,
+      "version": "pattern-menace-1.0",
+      "learning": true,
+      "games_trained": 10000
+    }
+  },
+  "opponent": {
+    "type": "heuristic",
+    "name": "rule-deterministic",
+    "version": "1.0",
+    "params": {
+      "level": "basic",
+      "deterministic": true,
+      "epsilon": 0.0
+    }
+  },
+  "ai_color": "black",
+  "seed": 2026,
+  "training": {
+    "games": 10000,
+    "wins": 0,
+    "losses": 9998,
+    "draws": 2,
+    "win_rate": 0.0,
+    "first_win_game": null,
+    "losses_before_first_win": null,
+    "stable_win_game": null,
+    "stable_win_definition": "最近 50 局勝率首次 >= 50% 的局號"
+  },
+  "training_segments": [
+    {
+      "games": "1-500",
+      "win_rate": 0.0,
+      "loss_rate": 0.996
+    },
+    {
+      "games": "501-1000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "1001-1500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "1501-2000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "2001-2500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "2501-3000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "3001-3500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "3501-4000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "4001-4500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "4501-5000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "5001-5500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "5501-6000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "6001-6500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "6501-7000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "7001-7500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "7501-8000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "8001-8500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "8501-9000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "9001-9500",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    },
+    {
+      "games": "9501-10000",
+      "win_rate": 0.0,
+      "loss_rate": 1.0
+    }
+  ],
+  "checkpoints": [
+    {
+      "after_train_games": 0,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 15.28
+    },
+    {
+      "after_train_games": 500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.68
+    },
+    {
+      "after_train_games": 1000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.06
+    },
+    {
+      "after_train_games": 1500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 28.06
+    },
+    {
+      "after_train_games": 2000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 25.98
+    },
+    {
+      "after_train_games": 2500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 28.64
+    },
+    {
+      "after_train_games": 3000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.72
+    },
+    {
+      "after_train_games": 3500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.82
+    },
+    {
+      "after_train_games": 4000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.52
+    },
+    {
+      "after_train_games": 4500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.64
+    },
+    {
+      "after_train_games": 5000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 25.96
+    },
+    {
+      "after_train_games": 5500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.54
+    },
+    {
+      "after_train_games": 6000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 25.9
+    },
+    {
+      "after_train_games": 6500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.84
+    },
+    {
+      "after_train_games": 7000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.86
+    },
+    {
+      "after_train_games": 7500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.44
+    },
+    {
+      "after_train_games": 8000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.66
+    },
+    {
+      "after_train_games": 8500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.62
+    },
+    {
+      "after_train_games": 9000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.6
+    },
+    {
+      "after_train_games": 9500,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 26.22
+    },
+    {
+      "after_train_games": 10000,
+      "opponent": "rule-deterministic",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 27.02
+    }
+  ],
+  "final_eval": [
+    {
+      "label": "規則型（確定性，訓練對手）",
+      "opponent": {
+        "type": "heuristic",
+        "name": "heuristic-basic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 25.76
+    },
+    {
+      "label": "規則型（隨機版）",
+      "opponent": {
+        "type": "heuristic",
+        "name": "heuristic-basic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": false,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 198,
+      "draws": 2,
+      "win_rate": 0.0,
+      "avg_moves": 30.29
+    },
+    {
+      "label": "棋形計分規則型",
+      "opponent": {
+        "type": "heuristic",
+        "name": "heuristic-pattern",
+        "version": "1.0",
+        "params": {
+          "level": "pattern",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.07
+    },
+    {
+      "label": "隨機",
+      "opponent": {
+        "type": "random",
+        "name": "random",
+        "version": "1.0",
+        "params": {}
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 87,
+      "losses": 105,
+      "draws": 8,
+      "win_rate": 0.435,
+      "avg_moves": 36.02
+    },
+    {
+      "label": "Minimax 深度 2",
+      "opponent": {
+        "type": "minimax",
+        "name": "minimax-d2",
+        "version": "1.0",
+        "params": {
+          "depth": 2,
+          "max_candidates": 8
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 11.76
+    },
+    {
+      "label": "Rapfi（外部引擎）",
+      "opponent": {
+        "type": "rapfi",
+        "name": "rapfi",
+        "version": "external",
+        "params": {
+          "max_node": 20000,
+          "max_depth": null,
+          "timeout_turn_ms": 5000,
+          "engine": "name=\"Rapfi\", version=\"0.44.01 (g++ 13.3.0 on Linux SSE41 AVX2 BMI2)\", author=\"Rapfi developers (see AUTHORS file)\", country=\"China\""
+        }
+      },
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 12.34
+    }
+  ],
+  "learning_stats": {
+    "learned_patterns": 297,
+    "total_updates": 534148,
+    "opponent_observations": 133535,
+    "opponent_patterns": 609,
+    "opponent_chosen_patterns": 366,
+    "patterns_above_initial": 269,
+    "patterns_below_initial": 24,
+    "max_card": 44849
+  },
+  "elapsed_sec": 161.2,
+  "files": {
+    "config": "data/experiments/improved_survival_first/config.json",
+    "train_csv": "data/experiments/improved_survival_first/train.csv",
+    "eval_csv": "data/experiments/improved_survival_first/eval.csv",
+    "summary": "data/experiments/improved_survival_first/summary.json",
+    "train_jsonl": "data/matches/improved_survival_first_train.jsonl.gz",
+    "eval_jsonl": "data/matches/improved_survival_first_eval.jsonl.gz",
+    "model": "data/models/improved_survival_first.json"
+  }
+}

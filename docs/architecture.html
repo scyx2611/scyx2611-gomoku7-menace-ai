@@ -1,0 +1,212 @@
+<title>7×7 五子棋學習 AI 架構</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 由上而下的分層架構圖（入口 → 訓練 → 代理 → 核心規則 → 資料），下方接單局資料流程 */
+:root {
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --ink: #18222b;
+  --muted: #5b6873;
+  --line: #c9d1d8;
+  --accent: #1f6f78;
+  --accent-soft: #dcecee;
+  --done: #2f7a4b;
+  --done-bg: #e1f1e6;
+  --todo: #9a6200;
+  --todo-bg: #fbefd8;
+  --opt: #6b7480;
+  --opt-bg: #eceff2;
+  --stone-black: #1b1f23;
+  --stone-white: #fbfbfb;
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181d; --surface: #1b232a; --ink: #e4eaee; --muted: #9aa6b0; --line: #2f3a43;
+    --accent: #5fb7bf; --accent-soft: #1d3438;
+    --done: #79c995; --done-bg: #1c3125; --todo: #e8b25a; --todo-bg: #3a2d16; --opt: #a3adb7; --opt-bg: #262f37;
+    --stone-black: #0b0d0f; --stone-white: #e9ecef;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181d; --surface: #1b232a; --ink: #e4eaee; --muted: #9aa6b0; --line: #2f3a43;
+  --accent: #5fb7bf; --accent-soft: #1d3438;
+  --done: #79c995; --done-bg: #1c3125; --todo: #e8b25a; --todo-bg: #3a2d16; --opt: #a3adb7; --opt-bg: #262f37;
+  --stone-black: #0b0d0f; --stone-white: #e9ecef;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 56px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; line-height: 1.25; }
+h2 { font-size: 1.3rem; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 65ch; }
+header { display: flex; flex-direction: column; gap: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 0.85rem; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.done { color: var(--done); background: var(--done-bg); }
+.chip.todo { color: var(--todo); background: var(--todo-bg); }
+.chip.opt { color: var(--opt); background: var(--opt-bg); }
+
+/* 分層架構 */
+.layers { display: flex; flex-direction: column; gap: 0; }
+.layer { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
+.layer-label { padding-top: 12px; display: flex; flex-direction: column; gap: 2px; }
+.layer-label b { font-size: 0.95rem; }
+.layer-label span { font-size: 0.78rem; color: var(--muted); }
+.mods { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; min-width: 0; }
+.mod { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mod.key { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.mod.optional { border-style: dashed; background: transparent; }
+.mod-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mod code { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 500; overflow-wrap: anywhere; }
+.mod p { font-size: 0.84rem; color: var(--muted); line-height: 1.5; }
+.group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.group-title { font-size: 0.78rem; letter-spacing: 0.06em; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.stone { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--muted); flex: none; }
+.stone.b { background: var(--stone-black); }
+.stone.w { background: var(--stone-white); }
+.agents { display: grid; grid-template-columns: 1fr 1.6fr; gap: 14px; min-width: 0; }
+.wall { border-left: 2px dashed var(--line); padding-left: 14px; }
+.connector { display: grid; grid-template-columns: 150px 1fr; gap: 16px; }
+.connector div:last-child { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.78rem; padding: 6px 0 6px 18px; border-left: 2px solid var(--line); margin-left: 24px; }
+
+/* 單局流程 */
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.flow li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; counter-increment: step; }
+.flow li::before { content: counter(step); font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); font-weight: 500; }
+.flow li b { font-size: 0.92rem; }
+.flow li p { font-size: 0.84rem; color: var(--muted); }
+.flow code, .note code { font-family: var(--font-mono); font-size: 0.8rem; }
+.formula { font-family: var(--font-mono); font-size: 0.82rem; background: var(--accent-soft); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
+
+/* 實驗 */
+.exp { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.exp > div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.exp b { font-size: 0.92rem; }
+.exp ul { margin: 0; padding-left: 1.1em; font-size: 0.84rem; color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 12px; }
+.note { font-size: 0.85rem; color: var(--muted); max-width: 70ch; }
+
+@media (max-width: 720px) {
+  .layer, .connector { grid-template-columns: 1fr; gap: 6px; }
+  .layer-label { padding-top: 0; flex-direction: row; gap: 8px; align-items: baseline; }
+  .connector div:first-child { display: none; }
+  .agents { grid-template-columns: 1fr; }
+  .wall { border-left: none; padding-left: 0; border-top: 2px dashed var(--line); padding-top: 12px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>7×7 五子棋位子牌學習 AI：系統架構</h1>
+    <p class="lede">兩種 AI 並存。作業主體是自行實作的 MENACE 類型「位子牌」學習 AI，所有實驗都用它。外部引擎 Rapfi 是另一個可選的強力 AI，也當評估對手，報告中標明為外部引擎。對手只負責落子，不讀寫學習資料，訓練與測試結果不會混淆。</p>
+    <div class="legend">
+      <span class="chip done">已完成・已測試</span>
+      <span class="chip done">已完成</span>
+      <span class="chip opt">選做</span>
+      <span>外框加粗＝老師要求的核心學習機制</span>
+    </div>
+  </header>
+
+  <div class="layers" aria-label="分層架構">
+    <div class="layer">
+      <div class="layer-label"><b>入口</b><span>使用者操作</span></div>
+      <div class="mods">
+        <div class="mod"><div class="mod-head"><code>main.py</code><span class="chip done">已完成</span></div><p>指令列：play / train / evaluate / experiment / report / replay / verify / stats</p></div>
+        <div class="mod"><div class="mod-head"><code>ui/pygame_ui.py</code><span class="chip done">已完成</span></div><p>7×7 棋盤、滑鼠落子、AI 落子提示、勝負顯示、重新開始、選擇 AI（位子牌 AI 或 Rapfi 強力 AI）、訓練開始/停止、統計</p></div>
+      </div>
+    </div>
+    <div class="connector"><div></div><div>呼叫 ↓</div></div>
+
+    <div class="layer">
+      <div class="layer-label"><b>訓練與實驗</b><span>training/</span></div>
+      <div class="mods">
+        <div class="mod"><div class="mod-head"><code>trainer.py</code><span class="chip done">已完成</span></div><p>自動對弈 N 局、固定亂數種子、每局結束更新權重、保存/載入訓練狀態</p></div>
+        <div class="mod"><div class="mod-head"><code>evaluation.py</code><span class="chip done">已完成</span></div><p>以凍結副本評估，評估前後比對學習資料雜湊值</p></div>
+        <div class="mod key"><div class="mod-head"><code>rewards.py</code><span class="chip done">已完成</span></div><p>勝 +3、敗 −1、和 +1、初始 10、下限 1；可設「輸前最後一手」懲罰與存活獎勵</p></div>
+        <div class="mod key"><div class="mod-head"><code>memory.py</code><span class="chip done">已完成</span></div><p>整盤位子牌組、棋形牌組，以及兩種對手記憶（整盤局面／棋形偏好）</p></div>
+      </div>
+    </div>
+    <div class="connector"><div></div><div>驅動對弈 ↓</div></div>
+
+    <div class="layer">
+      <div class="layer-label"><b>代理</b><span>agents/</span></div>
+      <div class="agents">
+        <div class="group">
+          <div class="group-title"><span class="stone b"></span>學習方（預設先手）</div>
+          <div class="mod"><div class="mod-head"><code>menace_agent.py</code><span class="chip done">修正前</span></div><p>位子牌綁定整個盤面。7×7 盤面太多，幾乎不會重複遇到，獎懲累積不起來</p></div>
+          <div class="mod key"><div class="mod-head"><code>pattern_menace_agent.py</code><span class="chip done">修正後</span></div><p>位子牌綁定四個方向的局部棋形，牌數相乘；相同棋形在不同局之間共用經驗</p></div>
+          <div class="mod"><div class="mod-head"><code>base_agent.py</code><span class="chip done">已完成</span></div><p>統一介面：start_game / select_move / observe_move / end_game</p></div>
+        </div>
+        <div class="group wall">
+          <div class="group-title"><span class="stone w"></span>對手方（不讀寫學習資料）</div>
+          <div class="mods">
+            <div class="mod"><div class="mod-head"><code>random_agent.py</code><span class="chip done">已完成</span></div><p>均勻隨機</p></div>
+            <div class="mod"><div class="mod-head"><code>heuristic_agent.py</code><span class="chip done">已完成</span></div><p>規則型攻防，可設為確定性（同局面同一手）</p></div>
+            <div class="mod"><div class="mod-head"><code>minimax_agent.py</code><span class="chip done">已完成</span></div><p>Alpha-Beta 搜尋，只作比較基準，不算學習</p></div>
+            <div class="mod"><div class="mod-head"><code>rapfi_agent.py</code><span class="chip done">已完成</span></div><p>以 Gomocup 協定呼叫外部引擎 Rapfi。已實測 7×7、自由規則可落子。用途：介面中的「強力 AI」與評估對手，不參與位子牌學習</p></div>
+            <div class="mod optional"><div class="mod-head"><code>KataGomo</code><span class="chip opt">選做</span></div><p>需另備模型與 GPU，7×7 未驗證，暫不採用</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="connector"><div></div><div>使用 ↓</div></div>
+
+    <div class="layer">
+      <div class="layer-label"><b>核心規則</b><span>core/</span></div>
+      <div class="mods">
+        <div class="mod"><div class="mod-head"><code>board.py</code><span class="chip done">已完成</span></div><p>49 格棋盤、落子合法性、空位列表</p></div>
+        <div class="mod"><div class="mod-head"><code>rules.py</code><span class="chip done">已完成</span></div><p>橫、直、兩斜線五連判定；整盤掃描驗證</p></div>
+        <div class="mod"><div class="mod-head"><code>game.py</code><span class="chip done">已完成</span></div><p>回合控制、勝/負/平局、落子歷史、棋譜重播驗證</p></div>
+        <div class="mod key"><div class="mod-head"><code>symmetry.py</code><span class="chip done">已完成</span></div><p>八種旋轉/鏡像，取標準形；座標可轉回實際棋盤</p></div>
+      </div>
+    </div>
+    <div class="connector"><div></div><div>輸出 ↓</div></div>
+
+    <div class="layer">
+      <div class="layer-label"><b>紀錄與報告</b><span>reporting/、data/</span></div>
+      <div class="mods">
+        <div class="mod"><div class="mod-head"><code>reporting/logger.py</code><span class="chip done">已完成</span></div><p>每局一行 JSONL：棋局 ID、版本、種子、先後手、每手座標、結果、獎懲參數、牌數前後</p></div>
+        <div class="mod"><div class="mod-head"><code>reporting/report.py</code><span class="chip done">已完成</span></div><p>CSV 統計、學習曲線圖、實驗報告 Markdown</p></div>
+        <div class="mod"><div class="mod-head"><code>data/</code><span class="chip done">已產生</span></div><p>models/ 權重 JSON・matches/ 棋譜・experiments/ CSV・reports/ 圖與報告</p></div>
+        <div class="mod"><div class="mod-head"><code>tests/</code><span class="chip done">已完成</span></div><p>交接文件 12 項必要測試＋其他行為，共 48 項（pytest）</p></div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>一局訓練對弈的資料流</h2>
+    <ol class="flow">
+      <li><b>開局</b><p><code>trainer</code> 建立 <code>Game</code>，以該局種子重設雙方亂數；AI 執黑先手（可切換為後手）。</p></li>
+      <li><b>AI 看局面</b><p>盤面轉成「自己 / 對手 / 空」的相對表示；開啟去重時取八種對稱中的標準形，得到局面識別碼。</p></li>
+      <li><b>抽位子牌</b><p>查出每個空位的牌數，依 <span class="formula">P(a|s) = w(s,a) / Σw</span> 抽一個位置，轉回實際座標，並記下抽前牌數。</p></li>
+      <li><b>對手落子</b><p>對手自行決定位置；AI 只「旁觀」，把對手在此局面下的位置寫進對手記憶。</p></li>
+      <li><b>判定</b><p><code>rules</code> 判斷五連或棋盤下滿；未結束就回到步驟 2。</p></li>
+      <li><b>獎懲</b><p>依結果對本局每個 (局面, 位置) 增減牌數，套用下限，記下更新後牌數。</p></li>
+      <li><b>紀錄</b><p>整局寫入 JSONL（可重播驗證）並更新 CSV 統計；評估模式跳過步驟 6，權重不變。</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>實驗如何對應老師的要求</h2>
+    <div class="exp">
+      <div><b>修正前 → 修正後</b><ul><li>先用預設獎懲跑完整訓練，記錄首次勝利局數與每局棋譜</li><li>分析失敗原因後修改，再重新訓練</li><li>兩輪數據都保留，不覆蓋</li></ul></div>
+      <div><b>四個檢討問題</b><ul><li>先後手：同設定分別以先手、後手訓練</li><li>局面去重：對稱開/關，比較局面數與勝率</li><li>對手記憶：記錄統計，避讓開/關比較</li><li>獎懲效果：不同參數，同一對手、同局數</li></ul></div>
+      <div><b>公平比較</b><ul><li>訓練前後用同一對手、同一規則</li><li>評估時凍結權重</li><li>所有數字都來自實際執行</li></ul></div>
+      <div><b>外部引擎的位置</b><ul><li>Rapfi 不參與獎懲，不計入「由敗至贏」</li><li>只作為最強的評估對手與介面中的對照 AI</li><li>報告中把「搜尋/引擎找到好棋」與「獎懲學習」分開陳述</li></ul></div>
+    </div>
+    <p class="note">全部模組已實作並通過測試。Rapfi 已在 Linux 編譯並完成完整對局與壓力測試（6 個程序並行 900 局、可重現）；Windows 版執行檔尚未實測。實驗結果見 data/reports/experiment_report.md 與 docs/檢討報告.md。</p>
+  </section>
+</div>

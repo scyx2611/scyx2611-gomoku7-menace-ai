@@ -1,0 +1,78 @@
+{
+  "train_games": 10000,
+  "eval_every": 500,
+  "eval_games": 100,
+  "segment": 500,
+  "rolling_window": 50,
+  "stable_threshold": 0.5,
+  "final_eval_games": 200,
+  "final_eval": [
+    {
+      "type": "heuristic",
+      "level": "basic",
+      "deterministic": true,
+      "label": "規則型（確定性，訓練對手）"
+    },
+    {
+      "type": "heuristic",
+      "level": "basic",
+      "deterministic": false,
+      "label": "規則型（隨機版）"
+    },
+    {
+      "type": "heuristic",
+      "level": "pattern",
+      "deterministic": true,
+      "label": "棋形計分規則型"
+    },
+    {
+      "type": "random",
+      "label": "隨機"
+    },
+    {
+      "type": "minimax",
+      "depth": 2,
+      "label": "Minimax 深度 2"
+    },
+    {
+      "type": "rapfi",
+      "max_node": 20000,
+      "label": "Rapfi（外部引擎）",
+      "games": 100
+    }
+  ],
+  "name": "improved_survival_first_seed2027",
+  "group": "improved_survival_first",
+  "description": "修正後 + 存活獎勵（輸棋但比平均撐得久 +1）",
+  "seed": 2027,
+  "ai": {
+    "type": "pattern_menace",
+    "config": {
+      "reward": {
+        "win_reward": 3,
+        "loss_penalty": 1,
+        "draw_reward": 1,
+        "initial_weight": 10,
+        "min_weight": 1,
+        "survival_mode": true
+      },
+      "combine": "product",
+      "radius": 4,
+      "use_symmetry": true,
+      "opponent_model": "off",
+      "version": "pattern-menace-1.0"
+    }
+  },
+  "ai_color": "black",
+  "opponent": {
+    "type": "heuristic",
+    "level": "basic",
+    "deterministic": true,
+    "name": "rule-deterministic"
+  },
+  "log_learning": false,
+  "compress_logs": true,
+  "_started": "2026-10-29T03:29:29",
+  "_python": "3.13.17",
+  "_platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39"
+}
