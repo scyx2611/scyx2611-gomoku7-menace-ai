@@ -111,7 +111,7 @@ section { display: flex; flex-direction: column; gap: 12px; }
 <div class="wrap">
   <header>
     <h1>7×7 五子棋位子牌學習 AI：系統架構</h1>
-    <p class="lede">兩種 AI 並存。作業主體是自行實作的 MENACE 類型「位子牌」學習 AI，所有實驗都用它。外部引擎 Rapfi 是另一個可選的強力 AI，也當評估對手，報告中標明為外部引擎。對手只負責落子，不讀寫學習資料，訓練與測試結果不會混淆。</p>
+    <p class="lede">作業主體是自行實作的「位子牌」學習 AI，依牌數抽籤落子、依勝負增減牌數，經過兩次檢討修正，共三個版本並存，介面預設第二次修正。外部引擎 Rapfi 是另一個可選的強力 AI，也當評估對手，不參與學習。對手只負責落子，不讀寫學習資料；唯一例外是自我對弈的分身，它和 AI 共用同一副牌，只在訓練時使用。</p>
     <div class="legend">
       <span class="chip done">已完成・已測試</span>
       <span class="chip done">已完成</span>
@@ -125,7 +125,7 @@ section { display: flex; flex-direction: column; gap: 12px; }
       <div class="layer-label"><b>入口</b><span>使用者操作</span></div>
       <div class="mods">
         <div class="mod"><div class="mod-head"><code>main.py</code><span class="chip done">已完成</span></div><p>指令列：play / train / evaluate / experiment / report / replay / verify / stats</p></div>
-        <div class="mod"><div class="mod-head"><code>ui/pygame_ui.py</code><span class="chip done">已完成</span></div><p>7×7 棋盤、滑鼠落子、AI 落子提示、勝負顯示、重新開始、選擇 AI（位子牌 AI 或 Rapfi 強力 AI）、訓練開始/停止、統計</p></div>
+        <div class="mod"><div class="mod-head"><code>ui/pygame_ui.py</code><span class="chip done">已完成</span></div><p>7×7 棋盤、滑鼠落子、顯示 AI 上一手的位子牌機率、勝負、重新開始、切換 AI（三個版本的位子牌 AI、規則型、Minimax、Rapfi）、訓練開始/停止、保存模型</p></div>
       </div>
     </div>
     <div class="connector"><div></div><div>呼叫 ↓</div></div>
@@ -133,9 +133,9 @@ section { display: flex; flex-direction: column; gap: 12px; }
     <div class="layer">
       <div class="layer-label"><b>訓練與實驗</b><span>training/</span></div>
       <div class="mods">
-        <div class="mod"><div class="mod-head"><code>trainer.py</code><span class="chip done">已完成</span></div><p>自動對弈 N 局、固定亂數種子、每局結束更新權重、保存/載入訓練狀態</p></div>
+        <div class="mod"><div class="mod-head"><code>trainer.py</code><span class="chip done">已完成</span></div><p>自動對弈 N 局、固定亂數種子、先後手可輪流、每局結束更新牌數；<code>experiment.py</code> 依設定檔跑多種子實驗</p></div>
         <div class="mod"><div class="mod-head"><code>evaluation.py</code><span class="chip done">已完成</span></div><p>以凍結副本評估，評估前後比對學習資料雜湊值</p></div>
-        <div class="mod key"><div class="mod-head"><code>rewards.py</code><span class="chip done">已完成</span></div><p>勝 +3、敗 −1、和 +1、初始 10、下限 1；可設「輸前最後一手」懲罰與存活獎勵</p></div>
+        <div class="mod key"><div class="mod-head"><code>rewards.py</code><span class="chip done">已完成</span></div><p>前兩版的整數獎懲：勝 +3、敗 −1、和 +1、初始 10、下限 1。第二次修正改為按比例增減（勝 +1、敗 −1，越接近終局調整越大），寫在代理內</p></div>
         <div class="mod key"><div class="mod-head"><code>memory.py</code><span class="chip done">已完成</span></div><p>整盤位子牌組、棋形牌組、按比例的棋形牌（θ），以及兩種對手記憶</p></div>
         <div class="mod"><div class="mod-head"><code>tactics.py</code><span class="chip done">已完成</span></div><p>攻防測驗：能連五、必須擋四、該擋活三各 200 題，只用來評分、不參與學習</p></div>
       </div>
@@ -146,7 +146,7 @@ section { display: flex; flex-direction: column; gap: 12px; }
       <div class="layer-label"><b>代理</b><span>agents/</span></div>
       <div class="agents">
         <div class="group">
-          <div class="group-title"><span class="stone b"></span>學習方（預設先手）</div>
+          <div class="group-title"><span class="stone b"></span>學習方（三個版本）</div>
           <div class="mod"><div class="mod-head"><code>menace_agent.py</code><span class="chip done">修正前</span></div><p>位子牌綁定整個盤面。7×7 盤面太多，幾乎不會重複遇到，獎懲累積不起來</p></div>
           <div class="mod"><div class="mod-head"><code>pattern_menace_agent.py</code><span class="chip done">第一次修正</span></div><p>位子牌綁定四個方向的局部棋形，牌數相乘。對固定對手會贏，但只是背路線，學不會擋四</p></div>
           <div class="mod key"><div class="mod-head"><code>gradient_card_agent.py</code><span class="chip done">第二次修正</span></div><p>棋形計數牌（33 種）＋按比例增減牌數；學會連五、擋四、擋活三。對弈介面預設</p></div>
@@ -183,33 +183,33 @@ section { display: flex; flex-direction: column; gap: 12px; }
       <div class="mods">
         <div class="mod"><div class="mod-head"><code>reporting/logger.py</code><span class="chip done">已完成</span></div><p>每局一行 JSONL：棋局 ID、版本、種子、先後手、每手座標、結果、獎懲參數、牌數前後</p></div>
         <div class="mod"><div class="mod-head"><code>reporting/report.py</code><span class="chip done">已完成</span></div><p>CSV 統計、學習曲線圖、實驗報告 Markdown</p></div>
-        <div class="mod"><div class="mod-head"><code>data/</code><span class="chip done">已產生</span></div><p>models/ 權重 JSON・matches/ 棋譜・experiments/ CSV・reports/ 圖與報告</p></div>
-        <div class="mod"><div class="mod-head"><code>tests/</code><span class="chip done">已完成</span></div><p>交接文件 12 項必要測試＋其他行為，共 48 項（pytest）</p></div>
+        <div class="mod"><div class="mod-head"><code>data/</code><span class="chip done">已產生</span></div><p>63 組實驗的 models/ 權重・matches/ 棋譜（JSONL 或 .gz）・experiments/ CSV與摘要・reports/ 圖與報告</p></div>
+        <div class="mod"><div class="mod-head"><code>tests/</code><span class="chip done">已完成</span></div><p>交接文件 12 項必要測試＋其他行為，共 65 項（pytest）</p></div>
       </div>
     </div>
   </div>
 
   <section>
-    <h2>一局訓練對弈的資料流</h2>
+    <h2>一局訓練對弈的資料流（第二次修正）</h2>
     <ol class="flow">
-      <li><b>開局</b><p><code>trainer</code> 建立 <code>Game</code>，以該局種子重設雙方亂數；AI 執黑先手（可切換為後手）。</p></li>
-      <li><b>AI 看局面</b><p>盤面轉成「自己 / 對手 / 空」的相對表示；開啟去重時取八種對稱中的標準形，得到局面識別碼。</p></li>
-      <li><b>抽位子牌</b><p>查出每個空位的牌數，依 <span class="formula">P(a|s) = w(s,a) / Σw</span> 抽一個位置，轉回實際座標，並記下抽前牌數。</p></li>
-      <li><b>對手落子</b><p>對手自行決定位置；AI 只「旁觀」，把對手在此局面下的位置寫進對手記憶。</p></li>
+      <li><b>開局</b><p><code>trainer</code> 建立 <code>Game</code>，以該局種子重設亂數；混合對手抽出本局對手（自我對弈 50%、規則型與隨機 50%）；奇數局執黑、偶數局執白。</p></li>
+      <li><b>AI 看每個空位</b><p>對每個空位、四個方向，算出棋形計數「攻,n|守,n」，共 33 種。四個方向共用同一套牌，等於做了對稱去重。</p></li>
+      <li><b>抽位子牌</b><p>空位的牌數 = 四張棋形牌相乘，依 <span class="formula">P(a|s) = w(s,a) / Σw</span> 抽一個位置；記下抽前牌數與各候選位置的機率。</p></li>
+      <li><b>對手落子</b><p>對手自行決定位置；AI 只旁觀，把對手偏好的棋形寫進對手記憶。自我對弈時，對手是共用同一副牌的分身。</p></li>
       <li><b>判定</b><p><code>rules</code> 判斷五連或棋盤下滿；未結束就回到步驟 2。</p></li>
-      <li><b>獎懲</b><p>依結果對本局每個 (局面, 位置) 增減牌數，套用下限，記下更新後牌數。</p></li>
-      <li><b>紀錄</b><p>整局寫入 JSONL（可重播驗證）並更新 CSV 統計；評估模式跳過步驟 6，權重不變。</p></li>
+      <li><b>按比例獎懲</b><p>勝 +1、敗 −1，越接近終局的手調整越大。選中的牌按比例增減，同局面其他候選的牌反向微調；所以輸棋時「該擋卻沒擋」的位置會相對變多。</p></li>
+      <li><b>紀錄與評估</b><p>整局寫入 JSONL（可重播驗證）；每 1000 局用凍結副本評估，並跑攻防測驗。評估模式跳過步驟 6，牌數不變。</p></li>
     </ol>
   </section>
 
   <section>
     <h2>實驗如何對應老師的要求</h2>
     <div class="exp">
-      <div><b>修正前 → 修正後</b><ul><li>先用預設獎懲跑完整訓練，記錄首次勝利局數與每局棋譜</li><li>分析失敗原因後修改，再重新訓練</li><li>兩輪數據都保留，不覆蓋</li></ul></div>
-      <div><b>四個檢討問題</b><ul><li>先後手：同設定分別以先手、後手訓練</li><li>局面去重：對稱開/關，比較局面數與勝率</li><li>對手記憶：記錄統計，避讓開/關比較</li><li>獎懲效果：不同參數，同一對手、同局數</li></ul></div>
+      <div><b>修正前 → 第一次 → 第二次修正</b><ul><li>修正前：整盤局面位子牌，10000 局幾乎學不到</li><li>第一次：棋形牌，對固定對手會贏，但攻防測驗比亂下還低</li><li>第二次：棋形計數牌＋按比例增減＋混合對手，擋四 75%、擋活三 84%</li><li>三輪數據都保留，不覆蓋</li></ul></div>
+      <div><b>四個檢討問題</b><ul><li>先後手：同設定分別以先手、後手訓練</li><li>局面去重：對稱開/關，比較局面數與勝率</li><li>對手記憶：記錄統計，避讓開/關比較</li><li>獎懲效果：不同參數，同一對手、同局數</li><li>每種設定 3～5 個亂數種子</li></ul></div>
       <div><b>公平比較</b><ul><li>訓練前後用同一對手、同一規則</li><li>評估時凍結權重</li><li>所有數字都來自實際執行</li></ul></div>
       <div><b>外部引擎的位置</b><ul><li>Rapfi 不參與獎懲，不計入「由敗至贏」</li><li>只作為最強的評估對手與介面中的對照 AI</li><li>報告中把「搜尋/引擎找到好棋」與「獎懲學習」分開陳述</li></ul></div>
     </div>
-    <p class="note">全部模組已實作並通過測試。Rapfi 已在 Linux 編譯並完成完整對局與壓力測試（6 個程序並行 900 局、可重現）；Windows 版執行檔尚未實測。實驗結果見 data/reports/experiment_report.md 與 docs/檢討報告.md。</p>
+    <p class="note">全部模組已實作並通過 65 項測試，程式與數據已推到 GitHub（scyx2611/scyx2611-gomoku7-menace-ai）。Rapfi 已在 Linux 編譯並完成完整對局與壓力測試；Windows 版執行檔尚未實測。實驗結果見 data/reports/experiment_report.md 與 docs/檢討報告.md。</p>
   </section>
 </div>
