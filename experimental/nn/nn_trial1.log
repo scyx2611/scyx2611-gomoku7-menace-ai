@@ -1,0 +1,10 @@
+== 神經網路 lr 0.001 熵 0.01
+/tmp/claude-0/-home-user-scyx2611-gomoku7-menace-ai/c6a5d45d-e530-5d38-aac2-77011a240672/scratchpad/nncard.py:140: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:820.)
+  return {"loss": float(loss), "entropy": float(entropy), "n": len(A_t)}
+    10048 局：連五 16.2 擋四 12.9 擋活三  8.1  熵 2.18  (135s)
+    30016 局：連五 14.0 擋四 14.0 擋活三 11.0  熵 0.00  (365s)
+    60032 局：連五 16.5 擋四  6.5 擋活三 16.5  熵 0.00  (610s)
+   100032 局：連五 23.5 擋四 11.5 擋活三 11.0  熵 -0.00  (810s)
+   150016 局：連五  4.0 擋四  5.0 擋活三  8.5  熵 -0.00  (1364s)
+  評估 勝%/和%：規則隨機黑 0/0 規則隨機白 0/0 棋形黑 0/0 棋形白 0/0 MM2黑 0/0 MM2白 0/0 隨機黑 96/0 隨機白 90/0
