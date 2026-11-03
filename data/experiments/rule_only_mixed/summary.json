@@ -1,0 +1,1057 @@
+{
+  "name": "rule_only_mixed",
+  "group": "rule_only_mixed",
+  "description": "只靠規則：小區塊原始內容位子牌，自我對弈 90%＋隨機 10%，先後手輪流",
+  "ai": {
+    "type": "rule_only_card",
+    "name": "rule-only-card",
+    "version": "rule-only-1.0",
+    "params": {
+      "shapes": [
+        [
+          3,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "alpha": 0.1,
+      "lam": 0.7,
+      "beta": 10.0,
+      "initial_weight": 10.0,
+      "version": "rule-only-1.0",
+      "learning": true,
+      "games_trained": 300000
+    }
+  },
+  "opponent": {
+    "type": "mixed",
+    "name": "self+random",
+    "version": "1.0",
+    "params": {
+      "pool": [
+        {
+          "name": "self-play",
+          "type": "self_play",
+          "weight": 0.9
+        },
+        {
+          "name": "random",
+          "type": "random",
+          "weight": 0.1
+        }
+      ]
+    },
+    "current": {
+      "type": "self_play",
+      "name": "self-play",
+      "version": "rule-only-1.0",
+      "params": {
+        "shapes": [
+          [
+            3,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "alpha": 0.1,
+        "lam": 0.7,
+        "beta": 10.0,
+        "initial_weight": 10.0,
+        "version": "rule-only-1.0",
+        "learning": true,
+        "games_trained": 270153
+      }
+    }
+  },
+  "ai_color": "alternate",
+  "seed": 2026,
+  "training": {
+    "games": 300000,
+    "wins": 160215,
+    "losses": 133890,
+    "draws": 5895,
+    "win_rate": 0.5341,
+    "first_win_game": 2,
+    "losses_before_first_win": 1,
+    "stable_win_game": 50,
+    "stable_win_definition": "最近 50 局勝率首次 >= 50% 的局號"
+  },
+  "training_segments": [
+    {
+      "games": "1-25000",
+      "win_rate": 0.5319,
+      "loss_rate": 0.4442
+    },
+    {
+      "games": "25001-50000",
+      "win_rate": 0.5348,
+      "loss_rate": 0.4466
+    },
+    {
+      "games": "50001-75000",
+      "win_rate": 0.5362,
+      "loss_rate": 0.4466
+    },
+    {
+      "games": "75001-100000",
+      "win_rate": 0.5321,
+      "loss_rate": 0.4502
+    },
+    {
+      "games": "100001-125000",
+      "win_rate": 0.5346,
+      "loss_rate": 0.4453
+    },
+    {
+      "games": "125001-150000",
+      "win_rate": 0.531,
+      "loss_rate": 0.4472
+    },
+    {
+      "games": "150001-175000",
+      "win_rate": 0.5341,
+      "loss_rate": 0.4442
+    },
+    {
+      "games": "175001-200000",
+      "win_rate": 0.5382,
+      "loss_rate": 0.4443
+    },
+    {
+      "games": "200001-225000",
+      "win_rate": 0.5359,
+      "loss_rate": 0.4462
+    },
+    {
+      "games": "225001-250000",
+      "win_rate": 0.5288,
+      "loss_rate": 0.4505
+    },
+    {
+      "games": "250001-275000",
+      "win_rate": 0.5352,
+      "loss_rate": 0.4455
+    },
+    {
+      "games": "275001-300000",
+      "win_rate": 0.5358,
+      "loss_rate": 0.4447
+    }
+  ],
+  "checkpoints": [
+    {
+      "after_train_games": 0,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 1,
+      "losses": 93,
+      "draws": 6,
+      "win_rate": 0.01,
+      "avg_moves": 30.03,
+      "tactics_win": 0.0849,
+      "tactics_block": 0.0894,
+      "tactics_three": 0.0828
+    },
+    {
+      "after_train_games": 0,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 0,
+      "losses": 89,
+      "draws": 11,
+      "win_rate": 0.0,
+      "avg_moves": 31.62,
+      "tactics_win": 0.0849,
+      "tactics_block": 0.0894,
+      "tactics_three": 0.0828
+    },
+    {
+      "after_train_games": 0,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.46,
+      "tactics_win": 0.0849,
+      "tactics_block": 0.0894,
+      "tactics_three": 0.0828
+    },
+    {
+      "after_train_games": 25000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 10,
+      "losses": 70,
+      "draws": 20,
+      "win_rate": 0.1,
+      "avg_moves": 34.78,
+      "tactics_win": 0.3696,
+      "tactics_block": 0.1592,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 25000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 7,
+      "losses": 72,
+      "draws": 21,
+      "win_rate": 0.07,
+      "avg_moves": 33.69,
+      "tactics_win": 0.3696,
+      "tactics_block": 0.1592,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 25000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.98,
+      "tactics_win": 0.3696,
+      "tactics_block": 0.1592,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 50000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 14,
+      "losses": 60,
+      "draws": 26,
+      "win_rate": 0.14,
+      "avg_moves": 36.96,
+      "tactics_win": 0.3839,
+      "tactics_block": 0.1789,
+      "tactics_three": 0.2103
+    },
+    {
+      "after_train_games": 50000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 7,
+      "losses": 68,
+      "draws": 25,
+      "win_rate": 0.07,
+      "avg_moves": 36.27,
+      "tactics_win": 0.3839,
+      "tactics_block": 0.1789,
+      "tactics_three": 0.2103
+    },
+    {
+      "after_train_games": 50000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 11.18,
+      "tactics_win": 0.3839,
+      "tactics_block": 0.1789,
+      "tactics_three": 0.2103
+    },
+    {
+      "after_train_games": 75000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 11,
+      "losses": 63,
+      "draws": 26,
+      "win_rate": 0.11,
+      "avg_moves": 35.65,
+      "tactics_win": 0.4304,
+      "tactics_block": 0.179,
+      "tactics_three": 0.2474
+    },
+    {
+      "after_train_games": 75000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 11,
+      "losses": 78,
+      "draws": 11,
+      "win_rate": 0.11,
+      "avg_moves": 33.37,
+      "tactics_win": 0.4304,
+      "tactics_block": 0.179,
+      "tactics_three": 0.2474
+    },
+    {
+      "after_train_games": 75000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 12.62,
+      "tactics_win": 0.4304,
+      "tactics_block": 0.179,
+      "tactics_three": 0.2474
+    },
+    {
+      "after_train_games": 100000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 9,
+      "losses": 59,
+      "draws": 32,
+      "win_rate": 0.09,
+      "avg_moves": 37.71,
+      "tactics_win": 0.4014,
+      "tactics_block": 0.192,
+      "tactics_three": 0.2209
+    },
+    {
+      "after_train_games": 100000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 10,
+      "losses": 63,
+      "draws": 27,
+      "win_rate": 0.1,
+      "avg_moves": 36.1,
+      "tactics_win": 0.4014,
+      "tactics_block": 0.192,
+      "tactics_three": 0.2209
+    },
+    {
+      "after_train_games": 100000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 17.86,
+      "tactics_win": 0.4014,
+      "tactics_block": 0.192,
+      "tactics_three": 0.2209
+    },
+    {
+      "after_train_games": 125000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 10,
+      "losses": 52,
+      "draws": 38,
+      "win_rate": 0.1,
+      "avg_moves": 38.18,
+      "tactics_win": 0.3795,
+      "tactics_block": 0.2046,
+      "tactics_three": 0.2254
+    },
+    {
+      "after_train_games": 125000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 10,
+      "losses": 59,
+      "draws": 31,
+      "win_rate": 0.1,
+      "avg_moves": 36.02,
+      "tactics_win": 0.3795,
+      "tactics_block": 0.2046,
+      "tactics_three": 0.2254
+    },
+    {
+      "after_train_games": 125000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 12.62,
+      "tactics_win": 0.3795,
+      "tactics_block": 0.2046,
+      "tactics_three": 0.2254
+    },
+    {
+      "after_train_games": 150000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 11,
+      "losses": 51,
+      "draws": 38,
+      "win_rate": 0.11,
+      "avg_moves": 37.87,
+      "tactics_win": 0.4018,
+      "tactics_block": 0.1848,
+      "tactics_three": 0.2366
+    },
+    {
+      "after_train_games": 150000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 11,
+      "losses": 57,
+      "draws": 32,
+      "win_rate": 0.11,
+      "avg_moves": 37.93,
+      "tactics_win": 0.4018,
+      "tactics_block": 0.1848,
+      "tactics_three": 0.2366
+    },
+    {
+      "after_train_games": 150000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 99,
+      "draws": 1,
+      "win_rate": 0.0,
+      "avg_moves": 17.41,
+      "tactics_win": 0.4018,
+      "tactics_block": 0.1848,
+      "tactics_three": 0.2366
+    },
+    {
+      "after_train_games": 175000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 24,
+      "losses": 48,
+      "draws": 28,
+      "win_rate": 0.24,
+      "avg_moves": 36.46,
+      "tactics_win": 0.441,
+      "tactics_block": 0.2018,
+      "tactics_three": 0.2356
+    },
+    {
+      "after_train_games": 175000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 11,
+      "losses": 61,
+      "draws": 28,
+      "win_rate": 0.11,
+      "avg_moves": 37.73,
+      "tactics_win": 0.441,
+      "tactics_block": 0.2018,
+      "tactics_three": 0.2356
+    },
+    {
+      "after_train_games": 175000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 90,
+      "draws": 10,
+      "win_rate": 0.0,
+      "avg_moves": 20.9,
+      "tactics_win": 0.441,
+      "tactics_block": 0.2018,
+      "tactics_three": 0.2356
+    },
+    {
+      "after_train_games": 200000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 10,
+      "losses": 60,
+      "draws": 30,
+      "win_rate": 0.1,
+      "avg_moves": 37.76,
+      "tactics_win": 0.4311,
+      "tactics_block": 0.219,
+      "tactics_three": 0.2409
+    },
+    {
+      "after_train_games": 200000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 11,
+      "losses": 72,
+      "draws": 17,
+      "win_rate": 0.11,
+      "avg_moves": 34.33,
+      "tactics_win": 0.4311,
+      "tactics_block": 0.219,
+      "tactics_three": 0.2409
+    },
+    {
+      "after_train_games": 200000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 13.3,
+      "tactics_win": 0.4311,
+      "tactics_block": 0.219,
+      "tactics_three": 0.2409
+    },
+    {
+      "after_train_games": 225000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 11,
+      "losses": 54,
+      "draws": 35,
+      "win_rate": 0.11,
+      "avg_moves": 38.02,
+      "tactics_win": 0.4328,
+      "tactics_block": 0.1857,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 225000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 6,
+      "losses": 68,
+      "draws": 26,
+      "win_rate": 0.06,
+      "avg_moves": 35.82,
+      "tactics_win": 0.4328,
+      "tactics_block": 0.1857,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 225000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.0,
+      "tactics_win": 0.4328,
+      "tactics_block": 0.1857,
+      "tactics_three": 0.2169
+    },
+    {
+      "after_train_games": 250000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 10,
+      "losses": 62,
+      "draws": 28,
+      "win_rate": 0.1,
+      "avg_moves": 36.9,
+      "tactics_win": 0.4389,
+      "tactics_block": 0.1895,
+      "tactics_three": 0.2104
+    },
+    {
+      "after_train_games": 250000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 8,
+      "losses": 62,
+      "draws": 30,
+      "win_rate": 0.08,
+      "avg_moves": 37.42,
+      "tactics_win": 0.4389,
+      "tactics_block": 0.1895,
+      "tactics_three": 0.2104
+    },
+    {
+      "after_train_games": 250000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 98,
+      "draws": 2,
+      "win_rate": 0.0,
+      "avg_moves": 16.38,
+      "tactics_win": 0.4389,
+      "tactics_block": 0.1895,
+      "tactics_three": 0.2104
+    },
+    {
+      "after_train_games": 275000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 7,
+      "losses": 52,
+      "draws": 41,
+      "win_rate": 0.07,
+      "avg_moves": 39.54,
+      "tactics_win": 0.4422,
+      "tactics_block": 0.1788,
+      "tactics_three": 0.2323
+    },
+    {
+      "after_train_games": 275000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 15,
+      "losses": 50,
+      "draws": 35,
+      "win_rate": 0.15,
+      "avg_moves": 37.17,
+      "tactics_win": 0.4422,
+      "tactics_block": 0.1788,
+      "tactics_three": 0.2323
+    },
+    {
+      "after_train_games": 275000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 17.34,
+      "tactics_win": 0.4422,
+      "tactics_block": 0.1788,
+      "tactics_three": 0.2323
+    },
+    {
+      "after_train_games": 300000,
+      "label": "規則型隨機版・AI 先手",
+      "opponent": "rule-stochastic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 19,
+      "losses": 50,
+      "draws": 31,
+      "win_rate": 0.19,
+      "avg_moves": 36.12,
+      "tactics_win": 0.4664,
+      "tactics_block": 0.1734,
+      "tactics_three": 0.2678
+    },
+    {
+      "after_train_games": 300000,
+      "label": "規則型隨機版・AI 後手",
+      "opponent": "rule-stochastic",
+      "ai_color": "white",
+      "games": 100,
+      "wins": 16,
+      "losses": 49,
+      "draws": 35,
+      "win_rate": 0.16,
+      "avg_moves": 37.74,
+      "tactics_win": 0.4664,
+      "tactics_block": 0.1734,
+      "tactics_three": 0.2678
+    },
+    {
+      "after_train_games": 300000,
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": "pattern-deterministic",
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 99,
+      "draws": 1,
+      "win_rate": 0.0,
+      "avg_moves": 12.87,
+      "tactics_win": 0.4664,
+      "tactics_block": 0.1734,
+      "tactics_three": 0.2678
+    }
+  ],
+  "final_eval": [
+    {
+      "label": "規則型（確定性）・AI 先手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "rule-deterministic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 24,
+      "losses": 163,
+      "draws": 13,
+      "win_rate": 0.12,
+      "avg_moves": 28.2
+    },
+    {
+      "label": "規則型（確定性）・AI 後手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "rule-deterministic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 20,
+      "losses": 177,
+      "draws": 3,
+      "win_rate": 0.1,
+      "avg_moves": 25.39
+    },
+    {
+      "label": "規則型（隨機版）・AI 先手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "rule-stochastic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": false,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 29,
+      "losses": 92,
+      "draws": 79,
+      "win_rate": 0.145,
+      "avg_moves": 39.15
+    },
+    {
+      "label": "規則型（隨機版）・AI 後手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "rule-stochastic",
+        "version": "1.0",
+        "params": {
+          "level": "basic",
+          "deterministic": false,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 16,
+      "losses": 132,
+      "draws": 52,
+      "win_rate": 0.08,
+      "avg_moves": 35.94
+    },
+    {
+      "label": "棋形計分規則型・AI 先手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "pattern-deterministic",
+        "version": "1.0",
+        "params": {
+          "level": "pattern",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 197,
+      "draws": 3,
+      "win_rate": 0.0,
+      "avg_moves": 13.23
+    },
+    {
+      "label": "棋形計分規則型・AI 後手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "pattern-deterministic",
+        "version": "1.0",
+        "params": {
+          "level": "pattern",
+          "deterministic": true,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.5
+    },
+    {
+      "label": "棋形計分規則型（隨機版）・AI 先手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "heuristic-pattern",
+        "version": "1.0",
+        "params": {
+          "level": "pattern",
+          "deterministic": false,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 199,
+      "draws": 1,
+      "win_rate": 0.0,
+      "avg_moves": 13.1
+    },
+    {
+      "label": "棋形計分規則型（隨機版）・AI 後手",
+      "opponent": {
+        "type": "heuristic",
+        "name": "heuristic-pattern",
+        "version": "1.0",
+        "params": {
+          "level": "pattern",
+          "deterministic": false,
+          "epsilon": 0.0
+        }
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.49
+    },
+    {
+      "label": "隨機・AI 先手",
+      "opponent": {
+        "type": "random",
+        "name": "random",
+        "version": "1.0",
+        "params": {}
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 193,
+      "losses": 6,
+      "draws": 1,
+      "win_rate": 0.965,
+      "avg_moves": 27.78
+    },
+    {
+      "label": "隨機・AI 後手",
+      "opponent": {
+        "type": "random",
+        "name": "random",
+        "version": "1.0",
+        "params": {}
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 184,
+      "losses": 10,
+      "draws": 6,
+      "win_rate": 0.92,
+      "avg_moves": 29.31
+    },
+    {
+      "label": "Minimax 深度 2・AI 先手",
+      "opponent": {
+        "type": "minimax",
+        "name": "minimax-d2",
+        "version": "1.0",
+        "params": {
+          "depth": 2,
+          "max_candidates": 8
+        }
+      },
+      "ai_color": "black",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 13.8
+    },
+    {
+      "label": "Minimax 深度 2・AI 後手",
+      "opponent": {
+        "type": "minimax",
+        "name": "minimax-d2",
+        "version": "1.0",
+        "params": {
+          "depth": 2,
+          "max_candidates": 8
+        }
+      },
+      "ai_color": "white",
+      "games": 200,
+      "wins": 0,
+      "losses": 200,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 10.75
+    },
+    {
+      "label": "Rapfi（外部引擎）・AI 先手",
+      "opponent": {
+        "type": "rapfi",
+        "name": "rapfi",
+        "version": "external",
+        "params": {
+          "max_node": 20000,
+          "max_depth": null,
+          "timeout_turn_ms": 5000,
+          "engine": "name=\"Rapfi\", version=\"0.44.01 (g++ 13.3.0 on Linux SSE41 AVX2 BMI2)\", author=\"Rapfi developers (see AUTHORS file)\", country=\"China\""
+        }
+      },
+      "ai_color": "black",
+      "games": 100,
+      "wins": 0,
+      "losses": 99,
+      "draws": 1,
+      "win_rate": 0.0,
+      "avg_moves": 18.13
+    },
+    {
+      "label": "Rapfi（外部引擎）・AI 後手",
+      "opponent": {
+        "type": "rapfi",
+        "name": "rapfi",
+        "version": "external",
+        "params": {
+          "max_node": 20000,
+          "max_depth": null,
+          "timeout_turn_ms": 5000,
+          "engine": "name=\"Rapfi\", version=\"0.44.01 (g++ 13.3.0 on Linux SSE41 AVX2 BMI2)\", author=\"Rapfi developers (see AUTHORS file)\", country=\"China\""
+        }
+      },
+      "ai_color": "white",
+      "games": 100,
+      "wins": 0,
+      "losses": 100,
+      "draws": 0,
+      "win_rate": 0.0,
+      "avg_moves": 11.88
+    }
+  ],
+  "learning_stats": {
+    "features": 157464,
+    "features_learned": 157464,
+    "windows": 73,
+    "window_classes": 12,
+    "max_weight": 2.3163,
+    "min_weight": -1.5707,
+    "opponent_states": 5601774,
+    "opponent_observations": 7246345,
+    "states_seen_twice_or_more": 123872,
+    "consistent_reply_ratio": 0.0702,
+    "states_with_opponent_winning_reply": 0
+  },
+  "tactics": {
+    "win": {
+      "n": 200,
+      "prob": 0.4664,
+      "top1": 0.58
+    },
+    "block": {
+      "n": 200,
+      "prob": 0.1734,
+      "top1": 0.3
+    },
+    "three": {
+      "n": 200,
+      "prob": 0.2678,
+      "top1": 0.415
+    },
+    "mean_prob": 0.3025
+  },
+  "elapsed_sec": 9381.8,
+  "files": {
+    "config": "data/experiments/rule_only_mixed/config.json",
+    "train_csv": "data/experiments/rule_only_mixed/train.csv",
+    "eval_csv": "data/experiments/rule_only_mixed/eval.csv",
+    "summary": "data/experiments/rule_only_mixed/summary.json",
+    "train_jsonl": "data/matches/rule_only_mixed_train.jsonl.gz",
+    "eval_jsonl": "data/matches/rule_only_mixed_eval.jsonl.gz",
+    "model": "data/models/rule_only_mixed.json.gz"
+  }
+}

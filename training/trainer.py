@@ -9,13 +9,14 @@ from agents.base_agent import Agent
 from agents.menace_agent import MenaceAgent
 from agents.gradient_card_agent import GradientCardAgent
 from agents.pattern_menace_agent import PatternMenaceAgent
+from agents.rule_only_card_agent import RuleOnlyCardAgent
 from core.board import BLACK, COLOR_NAME, WHITE
 from core.board import IllegalMoveError
 from core.game import Game
 from training.rewards import AI_LOSS, AI_WIN, DRAW
 
 ROLLING_WINDOW = 50
-LEARNING_AGENTS = (MenaceAgent, PatternMenaceAgent, GradientCardAgent)
+LEARNING_AGENTS = (MenaceAgent, PatternMenaceAgent, GradientCardAgent, RuleOnlyCardAgent)
 
 
 def is_learning_agent(agent: Agent) -> bool:
@@ -79,7 +80,8 @@ def build_record(game: Game, info: dict | None, *, game_id: str, experiment: str
     if is_learning_agent(ai):
         cfg = ai.config.to_dict()
         rec["reward_params"] = cfg["reward"] if "reward" in cfg else {
-            k: cfg[k] for k in ("alpha", "gamma", "win_return", "loss_return", "draw_return", "initial_weight")}
+            k: cfg[k] for k in ("alpha", "gamma", "lam", "beta", "win_return", "loss_return", "draw_return",
+                                "initial_weight") if k in cfg}
         rec["ai_options"] = {k: v for k, v in cfg.items() if k != "reward"}
         rec["learning_enabled"] = ai.learning
         if include_learning and info is not None:

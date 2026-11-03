@@ -59,6 +59,7 @@ GROUP_LABEL = {
     "card_v3_selfplay": "第二次修正・純自我對弈",
     "card_v3_line_mixed": "拆解：按比例增減＋舊棋形",
     "window_additive_mixed": "拆解：新棋形＋整數加減",
+    "rule_only_mixed": "只靠規則・自我對弈",
     "improved_vs_random_first": "第一次修正・對隨機",
 }
 
@@ -395,10 +396,13 @@ def _load_model(path: str):
     from agents.gradient_card_agent import GradientCardAgent
     from agents.menace_agent import MenaceAgent
     from agents.pattern_menace_agent import PatternMenaceAgent
-    with open(os.path.join(ROOT, path), encoding="utf-8") as f:
+    from agents.rule_only_card_agent import RuleOnlyCardAgent
+    import gzip
+    full = os.path.join(ROOT, path)
+    with (gzip.open(full, "rt", encoding="utf-8") if full.endswith(".gz") else open(full, encoding="utf-8")) as f:
         data = json.load(f)
-    cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent}.get(
-        data.get("format"), MenaceAgent)
+    cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent,
+           "rule-only-card-weights": RuleOnlyCardAgent}.get(data.get("format"), MenaceAgent)
     return cls.from_dict(data, learning=False)
 
 
@@ -415,7 +419,7 @@ def tactics_table(groups) -> str:
     rows = []
     u = tactical_score(UniformBaseline())
     rows.append(["完全亂下（對照）", "—"] + [fmt_rate(u[k]["prob"]) for k in KINDS])
-    for gname, n in [("baseline_first", 1), ("improved_first", None), ("card_v3_rule_first", None),
+    for gname, n in [("baseline_first", 1), ("improved_first", None), ("rule_only_mixed", None), ("card_v3_rule_first", None),
                      ("card_v3_mixed", None), ("card_v3_selfplay", None), ("card_v3_line_mixed", None),
                      ("window_additive_mixed", None)]:
         ts = group_tactics(groups, gname, n)
@@ -558,6 +562,137 @@ def v3_sections(summaries, groups, figs) -> list[str]:
     return md
 
 
+# ---- 第四種模式：只靠規則 ---------------------------------------------------------
+def chart_rule_only_curve(groups, path) -> None:
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+    runs = groups.get("rule_only_mixed", [])
+    for s in runs:
+        cps = s["checkpoints"]
+        xs = sorted({c["after_train_games"] for c in cps})
+        tac = {c["after_train_games"]: (c["tactics_win"], c["tactics_block"], c["tactics_three"]) for c in cps}
+        for k, (name, color) in enumerate([("能連五", C_THIRD), ("必須擋四", C_IMPROVED), ("該擋活三", C_BASELINE)]):
+            axes[0].plot([x / 1000 for x in xs], [tac[x][k] * 100 for x in xs], color=color, lw=1.6, alpha=0.8,
+                         label=name if s["seed"] == 2026 else None)
+        rr = {c["after_train_games"]: c for c in cps if c["label"].startswith("規則型隨機版・AI 先手")}
+        axes[1].plot([x / 1000 for x in xs], [rr[x]["wins"] / rr[x]["games"] * 100 for x in xs], color=C_IMPROVED,
+                     lw=1.6, alpha=0.8, label="勝" if s["seed"] == 2026 else None)
+        axes[1].plot([x / 1000 for x in xs], [rr[x]["draws"] / rr[x]["games"] * 100 for x in xs], color=C_YELLOW,
+                     lw=1.6, alpha=0.8, label="和" if s["seed"] == 2026 else None)
+    axes[0].axhline(8.6, color=INK2, lw=1, ls="--")
+    axes[0].annotate("完全亂下 ≈ 8.6%", (0, 8.6), xytext=(4, 4), textcoords="offset points", color=INK2, fontsize=9)
+    axes[0].set_title(f"攻防測驗：抽中正解的機率（{len(runs)} 個種子）", color=INK, loc="left")
+    axes[1].set_title("對隨機版規則型（AI 先手，凍結評估 100 局）", color=INK, loc="left")
+    for ax in axes:
+        ax.set_xlabel("訓練局數（千局）")
+        ax.set_ylabel("%")
+        ax.set_ylim(0, 100)
+        ax.legend(loc="upper left")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
+def _render_feature(agent, fid: int) -> str:
+    """把一張小區塊牌畫成文字：X = 剛落子的一方（自己），O = 對手，. = 空。"""
+    offsets = _class_keys(agent)
+    # 找出 fid 屬於哪一類小區塊，再把編號拆回每格的內容
+    sizes = [3 ** len(k) for k in offsets]
+    start = 0
+    for key, size in zip(offsets, sizes):
+        if fid < start + size:
+            code = fid - start
+            vals = []
+            for _ in key:
+                vals.append(code % 3)
+                code //= 3
+            rows = sorted({c // 7 for c in key})
+            cols = sorted({c % 7 for c in key})
+            grid = [["  " for _ in cols] for _ in rows]
+            for cell, v in zip(key, vals):
+                grid[rows.index(cell // 7)][cols.index(cell % 7)] = {0: ".", 1: "X", 2: "O"}[v]
+            return "<br>".join(" ".join(ch for ch in row) for row in grid)
+        start += size
+    return "?"
+
+
+def _class_keys(agent) -> list[tuple[int, ...]]:
+    from agents.rule_only_card_agent import _SYM, SIZE as _S
+    keys = {}
+    for h, w in agent.config.shapes:
+        for r in range(_S - h + 1):
+            for c in range(_S - w + 1):
+                win = tuple((r + i) * _S + (c + j) for i in range(h) for j in range(w))
+                best = min(tuple(sorted(f(*divmod(cell, _S))[0] * _S + f(*divmod(cell, _S))[1] for cell in win))
+                           for f in _SYM)
+                keys.setdefault(best, len(keys))
+    return sorted(keys, key=keys.get)
+
+
+def rule_only_cards_table(summaries) -> str:
+    s = summaries.get("rule_only_mixed")
+    if not s:
+        return ""
+    agent = _load_model(s["files"]["model"])
+    w = agent.memory.w[:-1]
+    import numpy as np
+    order = np.argsort(w)
+    rows = [[_render_feature(agent, int(f)), f"{w[f]:+.3f}"] for f in order[::-1][:6]]
+    rows += [["…", ""]]
+    rows += [[_render_feature(agent, int(f)), f"{w[f]:+.3f}"] for f in order[:4]]
+    return table(["小區塊內容（X = 剛落子的一方，O = 對手，. = 空）", "牌值"], rows)
+
+
+def weight_example_rule_only(name: str) -> str:
+    path = os.path.join(ROOT, "data", "matches", f"{name}_train.jsonl.gz")
+    if not os.path.exists(path):
+        return "（找不到棋譜）"
+    for rec in read_matches(path):
+        if rec.get("learning") and rec["result"] == "ai_win" and rec["move_count"] >= 15:
+            rows = [[st["move_no"], f"({st['action'][0]},{st['action'][1]})", f"{st['value_before']:+.3f}",
+                     f"{st['card_before']:.2f}", f"{st['prob'] * 100:.2f}%", f"{st['target']:+.3f}",
+                     f"{st['card_after']:.2f}"] for st in rec["learning"]]
+            return (f"棋局 `{rec['game_id']}`（{rec['ai_color']}，共 {rec['move_count']} 手，結果 {rec['result']}）。"
+                    "「估值」是 AI 認為下完這手後自己的勝算（−1～+1），牌數 = 10 × e^(10 × 估值)；"
+                    "「目標」是終局後回頭算出的修正目標；「牌數（後）」是學習後重新看同一個局面時，這張牌的張數。\n\n"
+                    + table(["第幾手", "AI 選擇", "估值（前）", "牌數（前）", "抽中機率", "目標", "牌數（後）"], rows))
+    return "（前 2000 局中找不到合適的勝局）"
+
+
+def rule_only_sections(summaries, groups) -> list[str]:
+    runs = groups.get("rule_only_mixed")
+    if not runs:
+        return []
+    md = ["## 11. 第四種模式：只靠規則", "",
+          "除了五子棋規則（哪裡能下、誰贏、和局），程式不預先判斷任何東西。"
+          "每個空位的牌數由「下在這裡之後的盤面」決定：盤面上所有 3×3、2×4、4×2 小區塊的原始內容各是一張牌，"
+          "AI 只從自我對弈（90%）與隨機對手（10%）的輸贏中學習每張牌的價值。選位置時也不檢查「會不會連五」。", "",
+          "### 11.1 學習曲線", "", "![只靠規則學習曲線](rule_only_curve.png)", ""]
+    rows = []
+    for s in runs:
+        cps = s["checkpoints"]
+        for x in sorted({c["after_train_games"] for c in cps}):
+            if x not in (0, 25000, 50000, 100000, 200000, 300000):
+                continue
+            here = {c["label"]: c for c in cps if c["after_train_games"] == x}
+            c0 = next(iter(here.values()))
+            row = [s["seed"], x, fmt_rate(c0.get("tactics_win")), fmt_rate(c0.get("tactics_block")),
+                   fmt_rate(c0.get("tactics_three"))]
+            for lab in ("規則型隨機版・AI 先手", "規則型隨機版・AI 後手", "棋形計分規則型・AI 先手"):
+                c = here.get(lab)
+                row.append(f"{c['wins']}勝 {c['draws']}和 / {c['games']}" if c else "—")
+            rows.append(row)
+    md += ["### 11.2 由敗至贏：訓練過程中的凍結評估", "",
+           table(["種子", "已訓練局數", "能連五", "擋四", "擋活三", "對隨機版規則型（先手）", "對隨機版規則型（後手）",
+                  "對棋形計分規則型（先手）"], rows), ""]
+    md += [f"### 11.3 對各種對手（訓練 30 萬局後，{len(runs)} 個種子平均：勝率 / 和局率）", "",
+           "AI 先手：", "", v3_eval_table(groups, ["rule_only_mixed", "card_v3_mixed"], "・AI 先手"), "",
+           "AI 後手：", "", v3_eval_table(groups, ["rule_only_mixed", "card_v3_mixed"], "・AI 後手"), ""]
+    md += ["### 11.4 AI 自己學到的小區塊（主要種子，牌值最高與最低）", "",
+           "牌值越高，代表「下完後盤面出現這種小區塊」越可能贏。", "", rule_only_cards_table(summaries), ""]
+    md += ["### 11.5 位子牌增減實例（前 2000 局保存完整紀錄）", "", weight_example_rule_only("rule_only_mixed"), ""]
+    return md
+
+
 def build_report() -> str:
     _setup_font()
     os.makedirs(OUT, exist_ok=True)
@@ -587,6 +722,8 @@ def build_report() -> str:
 
     if groups.get("card_v3_mixed"):
         chart_tactics_curve(groups, os.path.join(OUT, figs["tactics"]))
+    if groups.get("rule_only_mixed"):
+        chart_rule_only_curve(groups, os.path.join(OUT, "rule_only_curve.png"))
     if groups.get("card_v3_rule_first"):
         chart_groups(groups, ["baseline_first", "improved_first", "card_v3_rule_first"],
                      os.path.join(OUT, figs["v3rule"]), "三個版本：只對確定性規則型、AI 先手（種子 2026）",
@@ -708,7 +845,9 @@ def build_report() -> str:
 
     md += v3_sections(summaries, groups, figs)
 
-    md += ["## 11. 全部實驗一覽", "",
+    md += rule_only_sections(summaries, groups)
+
+    md += ["## 12. 全部實驗一覽", "",
            table(["實驗", "說明", "種子", "勝率", "首次勝利", "穩定勝利", "用時（秒）"],
                  [[s["name"], s["description"], s["seed"], fmt_rate(s["training"]["win_rate"]),
                    fmt(s["training"]["first_win_game"]), fmt(s["training"]["stable_win_game"]), s["elapsed_sec"]]

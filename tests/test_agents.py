@@ -12,6 +12,7 @@ from agents.menace_agent import MenaceAgent, MenaceConfig
 from agents.minimax_agent import MinimaxAgent
 from agents.pattern_menace_agent import PatternMenaceAgent, PatternMenaceConfig, pattern_keys
 from agents.random_agent import RandomAgent
+from agents.rule_only_card_agent import RuleOnlyCardAgent, RuleOnlyConfig
 from agents.rapfi_agent import RapfiAgent, rapfi_available
 from core.board import BLACK, NUM_CELLS, WHITE, Board
 from core.game import Game, replay
@@ -31,6 +32,7 @@ def learning_agents():
         PatternMenaceAgent(PatternMenaceConfig(features="window"), seed=1),
         GradientCardAgent(GradientCardConfig(), seed=1),
         GradientCardAgent(GradientCardConfig(features="line"), seed=1),
+        RuleOnlyCardAgent(seed=1),
     ]
 
 
@@ -126,7 +128,7 @@ def test_save_load_round_trip(agent, tmp_path):
 # ---- 11. 先手 / 後手 ---------------------------------------------------------
 @pytest.mark.parametrize("color", [BLACK, WHITE])
 @pytest.mark.parametrize("make", [lambda: MenaceAgent(seed=1), lambda: PatternMenaceAgent(seed=1),
-                                  lambda: GradientCardAgent(seed=1)])
+                                  lambda: GradientCardAgent(seed=1), lambda: RuleOnlyCardAgent(seed=1)])
 def test_ai_plays_as_first_or_second(color, make):
     ai = make()
     rows = run_games(ai, HeuristicAgent("pattern"), 10, ai_color=color, base_seed=4)
@@ -305,3 +307,59 @@ def test_tactics_benchmark_classifies_and_scores():
     assert kind == "three" and set(ans) == {3 * 7 + 1, 3 * 7 + 5}
     s = tactical_score(UniformBaseline(), n_per_kind=20)
     assert all(0.02 < s[k]["prob"] < 0.2 for k in ("win", "block", "three"))
+
+
+# ---- 第四種模式：只靠規則 ------------------------------------------------------
+def _random_weights(agent, scale=0.3):
+    import numpy as np
+    agent.memory.w[:-1] = np.random.default_rng(0).normal(size=len(agent.memory.w) - 1) * scale
+
+
+@pytest.mark.parametrize("shapes", [[[3, 3]], [[3, 3], [2, 4], [4, 2]]])
+def test_rule_only_is_exactly_symmetric(shapes):
+    from core.symmetry import PERM
+    ai = RuleOnlyCardAgent(RuleOnlyConfig(shapes=shapes))
+    _random_weights(ai)
+    rng = random.Random(4)
+    cells = [0] * NUM_CELLS
+    for i in rng.sample(range(NUM_CELLS), 13):
+        cells[i] = rng.choice([BLACK, WHITE])
+    p0 = ai.move_probabilities(Board(cells), BLACK)
+    for t in range(8):
+        pt = ai.move_probabilities(Board(transform_cells(cells, t)), BLACK)
+        assert max(abs(p0[a] - pt[PERM[t][a]]) for a in p0) < 1e-12
+
+
+def test_rule_only_untrained_is_uniform_and_has_no_win_shortcut():
+    # 未訓練時所有空位機率相同：即使下一手就能連五，也沒有任何偏好（連五必須自己學）
+    ai = RuleOnlyCardAgent()
+    b = Board()
+    for c in range(4):
+        b.place(3, c, BLACK)
+    for c in range(4):
+        b.place(5, c, WHITE)
+    p = ai.move_probabilities(b, BLACK)
+    assert max(p.values()) - min(p.values()) < 1e-12
+
+
+@pytest.mark.parametrize("result,direction", [("win", 1), ("loss", -1)])
+def test_rule_only_learning_moves_card_in_right_direction(result, direction):
+    ai = RuleOnlyCardAgent(seed=3)
+    ai.record_after = True
+    b = Board()
+    b.place(3, 3, WHITE)
+    ai.start_game(BLACK, 1)
+    move = ai.select_move(b, BLACK)
+    info = ai.end_game(BLACK if result == "win" else WHITE, BLACK)
+    st = info["steps"][0]
+    assert (st["card_after"] - st["card_before"]) * direction > 0
+    assert "_cells" not in st
+
+
+def test_rule_only_saves_gzip(tmp_path):
+    ai = RuleOnlyCardAgent(seed=1)
+    run_games(ai, ai.twin(), 10, ai_color="alternate", base_seed=1)
+    path = os.path.join(tmp_path, "m.json.gz")
+    ai.save(path)
+    loaded = RuleOnlyCardAgent.load(path)
+    assert (loaded.memory.w == ai.memory.w).all()

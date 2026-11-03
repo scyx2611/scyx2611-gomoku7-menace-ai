@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+import gzip
 import json
 import os
 
@@ -13,6 +14,7 @@ from agents.menace_agent import MenaceAgent
 from agents.minimax_agent import MinimaxAgent
 from agents.pattern_menace_agent import PatternMenaceAgent
 from agents.random_agent import RandomAgent
+from agents.rule_only_card_agent import RuleOnlyCardAgent
 from agents.rapfi_agent import RapfiAgent, rapfi_available
 from core.board import COLOR_NAME
 from core.game import Game
@@ -20,6 +22,7 @@ from core.game import Game
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARD_MODEL = os.path.join(ROOT, "data", "models", "card_v3_mixed.json")
 IMPROVED_MODEL = os.path.join(ROOT, "data", "models", "improved_first.json")
+RULE_ONLY_MODEL = os.path.join(ROOT, "data", "models", "rule_only_mixed.json.gz")
 BASELINE_MODEL = os.path.join(ROOT, "data", "models", "baseline_first.json")
 HUMAN_LOG = os.path.join(ROOT, "data", "matches", "human_games.jsonl")
 
@@ -36,11 +39,17 @@ def ai_choices(model: str | None = None) -> list[tuple[str, str, callable]]:
         path = model or CARD_MODEL
         if not os.path.exists(path):
             return GradientCardAgent(learning=False), "尚無訓練資料（未訓練）"
-        with open(path, encoding="utf-8") as f:
+        opener = gzip.open if path.endswith(".gz") else open
+        with opener(path, "rt", encoding="utf-8") as f:
             data = json.load(f)
-        cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent}.get(
-            data.get("format"), MenaceAgent)
+        cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent,
+               "rule-only-card-weights": RuleOnlyCardAgent}.get(data.get("format"), MenaceAgent)
         return cls.from_dict(data, learning=False), f"已載入 {os.path.basename(path)}"
+
+    def rule_only():
+        if os.path.exists(RULE_ONLY_MODEL):
+            return RuleOnlyCardAgent.load(RULE_ONLY_MODEL, learning=False), "只靠規則，自我對弈學習"
+        return RuleOnlyCardAgent(learning=False), "尚無訓練資料（未訓練）"
 
     def improved():
         a, ok = _load_or_new(PatternMenaceAgent, IMPROVED_MODEL)
@@ -52,6 +61,7 @@ def ai_choices(model: str | None = None) -> list[tuple[str, str, callable]]:
 
     choices = [
         ("learned", "位子牌 AI（第二次修正）", learned),
+        ("ruleonly", "位子牌 AI（只靠規則）", rule_only),
         ("improved", "位子牌 AI（第一次修正）", improved),
         ("baseline", "位子牌 AI（修正前）", baseline),
         ("rule", "規則型對手", lambda: (HeuristicAgent("basic", deterministic=True), "只會連五與擋五")),

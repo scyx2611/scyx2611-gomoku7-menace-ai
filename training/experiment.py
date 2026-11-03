@@ -19,6 +19,8 @@ import platform
 import shutil
 import time
 
+import numpy as np
+
 from agents.base_agent import Agent
 from agents.gradient_card_agent import GradientCardAgent, GradientCardConfig
 from agents.heuristic_agent import HeuristicAgent
@@ -27,6 +29,7 @@ from agents.minimax_agent import MinimaxAgent
 from agents.mixed_opponent import MixedOpponent
 from agents.pattern_menace_agent import PatternMenaceAgent, PatternMenaceConfig
 from agents.random_agent import RandomAgent
+from agents.rule_only_card_agent import RuleOnlyCardAgent, RuleOnlyConfig
 from agents.rapfi_agent import EngineUnavailableError, RapfiAgent
 from core.board import NAME_COLOR
 from core.symmetry import canonical
@@ -64,6 +67,10 @@ def make_agent(spec: dict, seed: int | None = None, ai: Agent | None = None) -> 
         if "load" in spec:
             return GradientCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
         return GradientCardAgent(GradientCardConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
+    if t == "rule_only_card":
+        if "load" in spec:
+            return RuleOnlyCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
+        return RuleOnlyCardAgent(RuleOnlyConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
     if t == "random":
         return RandomAgent(name=name, seed=seed)
     if t == "heuristic":
@@ -77,7 +84,7 @@ def make_agent(spec: dict, seed: int | None = None, ai: Agent | None = None) -> 
     raise ValueError(f"未知的代理類型: {t}")
 
 
-def _paths(name: str, compress: bool = False) -> dict:
+def _paths(name: str, compress: bool = False, compress_model: bool = False) -> dict:
     exp_dir = os.path.join(DATA, "experiments", name)
     ext = ".jsonl.gz" if compress else ".jsonl"
     return {
@@ -88,7 +95,7 @@ def _paths(name: str, compress: bool = False) -> dict:
         "summary": os.path.join(exp_dir, "summary.json"),
         "train_jsonl": os.path.join(DATA, "matches", f"{name}_train{ext}"),
         "eval_jsonl": os.path.join(DATA, "matches", f"{name}_eval{ext}"),
-        "model": os.path.join(DATA, "models", f"{name}.json"),
+        "model": os.path.join(DATA, "models", f"{name}.json.gz" if compress_model else f"{name}.json"),
     }
 
 
@@ -107,6 +114,12 @@ def learning_stats(ai: Agent) -> dict:
             classes = {canonical([decode[ch] for ch in k])[0] for k in ai.memory.states}
             stats["unique_states_after_symmetry"] = len(classes)
         return stats
+    if isinstance(ai, RuleOnlyCardAgent):
+        w = ai.memory.w[:-1]
+        return {"features": int(len(w)), "features_learned": int(np.count_nonzero(w)),
+                "windows": ai.t.n_windows, "window_classes": ai.t.n_classes,
+                "max_weight": round(float(w.max()), 4), "min_weight": round(float(w.min()), 4),
+                **ai.opponent_memory.stats()}
     if isinstance(ai, GradientCardAgent):
         cards = sorted(((ai.memory.card(k), k) for k in ai.memory.theta), reverse=True)
         return {**ai.memory.stats(), **ai.opponent_memory.stats(),
@@ -124,7 +137,7 @@ def learning_stats(ai: Agent) -> dict:
 
 def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
     name = cfg["name"]
-    p = _paths(name, cfg.get("compress_logs", False))
+    p = _paths(name, cfg.get("compress_logs", False), cfg.get("compress_model", False))
     if os.path.exists(p["summary"]) and not force:
         raise FileExistsError(f"實驗 {name} 已有結果；為保留原始數據不會覆蓋（請改名或加 --force）")
     if force:
@@ -191,15 +204,22 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
     with MatchLogger(p["train_jsonl"]) as train_log, MatchLogger(p["eval_jsonl"]) as eval_log:
         checkpoint(0, eval_log)
         done = 0
+        log_until = cfg.get("log_learning_games", n_train if log_learning else 0)
         while done < n_train:
-            chunk = min(eval_every, n_train - done)
+            chunk = min(eval_every - done % eval_every, n_train - done)
+            detailed = done < log_until
+            if detailed:
+                chunk = min(chunk, log_until - done)
+            if hasattr(ai, "record_after"):
+                ai.record_after = detailed
             rows = run_games(ai, train_opp, chunk, ai_color=ai_color, base_seed=seed, phase="train",
                              experiment=name, logger=train_log, start_index=done + 1, tally=tally,
-                             include_learning=log_learning)
+                             include_learning=detailed)
             train_rows.extend(rows)
             done += chunk
-            log(f"訓練 {done}/{n_train}：累計勝率 {tally.wins / tally.n:.3f}，首次勝利 {tally.first_win}")
-            checkpoint(done, eval_log)
+            if done % eval_every == 0 or done == n_train:
+                log(f"訓練 {done}/{n_train}：累計勝率 {tally.wins / tally.n:.3f}，首次勝利 {tally.first_win}")
+                checkpoint(done, eval_log)
 
         final = []
         for spec in cfg.get("final_eval", []):

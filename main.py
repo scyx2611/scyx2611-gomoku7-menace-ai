@@ -42,10 +42,13 @@ def _load_ai(path: str, learning: bool, seed: int | None = None):
     from agents.gradient_card_agent import GradientCardAgent
     from agents.menace_agent import MenaceAgent
     from agents.pattern_menace_agent import PatternMenaceAgent
-    with open(path, encoding="utf-8") as f:
+    from agents.rule_only_card_agent import RuleOnlyCardAgent
+    import gzip
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as f:
         data = json.load(f)
-    cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent}.get(
-        data.get("format"), MenaceAgent)
+    cls = {"pattern-menace-weights": PatternMenaceAgent, "card-pg-weights": GradientCardAgent,
+           "rule-only-card-weights": RuleOnlyCardAgent}.get(data.get("format"), MenaceAgent)
     return cls.from_dict(data, learning=learning, seed=seed)
 
 
@@ -56,8 +59,8 @@ def cmd_train(args):
     if args.load:
         ai = _load_ai(args.load, learning=True, seed=args.seed)
     else:
-        ai = make_agent({"type": {"card": "card_pg", "pattern": "pattern_menace", "menace": "menace"}[args.agent]},
-                        seed=args.seed)
+        ai = make_agent({"type": {"card": "card_pg", "pattern": "pattern_menace", "menace": "menace",
+                                  "ruleonly": "rule_only_card"}[args.agent]}, seed=args.seed)
     opp = make_agent(_opponent_spec(args.opponent), seed=args.seed + 1)
     color = NAME_COLOR[args.color]
     tally = Tally()
@@ -182,13 +185,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--cli", action="store_true", help="使用文字模式")
     s.add_argument("--model", default=None, help="學習 AI 權重檔（預設使用第三版 data/models/card_v3_mixed.json）")
     s.add_argument("--opponent", default="learned",
-                   help="learned（第三版）/ improved（第二版）/ baseline（第一版）/ rule / pattern / random / minimax / rapfi")
+                   help="learned（第二次修正）/ ruleonly（只靠規則）/ improved（第一次修正）/ baseline（修正前）"
+                        " / rule / pattern / random / minimax / rapfi")
     s.add_argument("--human", default="white", choices=["black", "white"], help="玩家執黑（先手）或執白")
     s.set_defaults(func=cmd_play)
 
     s = sub.add_parser("train", help="訓練學習 AI")
-    s.add_argument("--agent", default="card", choices=["card", "pattern", "menace"],
-                   help="card = 第三版（第二次修正）、pattern = 第二版、menace = 第一版")
+    s.add_argument("--agent", default="card", choices=["card", "pattern", "menace", "ruleonly"],
+                   help="card = 第二次修正、pattern = 第一次修正、menace = 修正前、ruleonly = 只靠規則")
     s.add_argument("--opponent", default="rule")
     s.add_argument("--games", type=int, default=1000)
     s.add_argument("--color", default="black", choices=["black", "white"])
