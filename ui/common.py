@@ -23,8 +23,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARD_MODEL = os.path.join(ROOT, "data", "models", "card_v3_mixed.json")
 IMPROVED_MODEL = os.path.join(ROOT, "data", "models", "improved_first.json")
 RULE_ONLY_MODEL = os.path.join(ROOT, "data", "models", "rule_only_mixed.json.gz")
+NEURAL_MODEL = os.path.join(ROOT, "data", "models", "neural_mixed.pt")
 BASELINE_MODEL = os.path.join(ROOT, "data", "models", "baseline_first.json")
 HUMAN_LOG = os.path.join(ROOT, "data", "matches", "human_games.jsonl")
+
+
+def _torch_available() -> bool:
+    try:
+        import torch  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 
 def _load_or_new(cls, path: str):
@@ -35,8 +44,17 @@ def _load_or_new(cls, path: str):
 
 # (代號, 顯示名稱, 建立函式) —— 建立函式回傳 (agent, 說明)
 def ai_choices(model: str | None = None) -> list[tuple[str, str, callable]]:
+    def neural():
+        from agents.neural_card_agent import NeuralCardAgent
+        if os.path.exists(NEURAL_MODEL):
+            return NeuralCardAgent.load(NEURAL_MODEL, learning=False), "只靠規則，神經網路估盤面"
+        return NeuralCardAgent(learning=False), "尚無訓練資料（未訓練）"
+
     def learned():
         path = model or CARD_MODEL
+        if path.endswith(".pt"):
+            from agents.neural_card_agent import NeuralCardAgent
+            return NeuralCardAgent.load(path, learning=False), f"已載入 {os.path.basename(path)}"
         if not os.path.exists(path):
             return GradientCardAgent(learning=False), "尚無訓練資料（未訓練）"
         opener = gzip.open if path.endswith(".gz") else open
@@ -62,6 +80,7 @@ def ai_choices(model: str | None = None) -> list[tuple[str, str, callable]]:
     choices = [
         ("learned", "位子牌 AI（第二次修正）", learned),
         ("ruleonly", "位子牌 AI（只靠規則）", rule_only),
+        *([("neural", "位子牌 AI（神經網路）", neural)] if _torch_available() else []),
         ("improved", "位子牌 AI（第一次修正）", improved),
         ("baseline", "位子牌 AI（修正前）", baseline),
         ("rule", "規則型對手", lambda: (HeuristicAgent("basic", deterministic=True), "只會連五與擋五")),

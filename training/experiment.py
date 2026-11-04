@@ -67,6 +67,11 @@ def make_agent(spec: dict, seed: int | None = None, ai: Agent | None = None) -> 
         if "load" in spec:
             return GradientCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
         return GradientCardAgent(GradientCardConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
+    if t == "neural_card":
+        from agents.neural_card_agent import NeuralCardAgent, NeuralCardConfig
+        if "load" in spec:
+            return NeuralCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
+        return NeuralCardAgent(NeuralCardConfig.from_dict(spec.get("config", {})), name=name, seed=seed)
     if t == "rule_only_card":
         if "load" in spec:
             return RuleOnlyCardAgent.load(os.path.join(ROOT, spec["load"]), seed=seed, name=name)
@@ -84,7 +89,7 @@ def make_agent(spec: dict, seed: int | None = None, ai: Agent | None = None) -> 
     raise ValueError(f"未知的代理類型: {t}")
 
 
-def _paths(name: str, compress: bool = False, compress_model: bool = False) -> dict:
+def _paths(name: str, compress: bool = False, compress_model: bool = False, model_ext: str | None = None) -> dict:
     exp_dir = os.path.join(DATA, "experiments", name)
     ext = ".jsonl.gz" if compress else ".jsonl"
     return {
@@ -95,12 +100,16 @@ def _paths(name: str, compress: bool = False, compress_model: bool = False) -> d
         "summary": os.path.join(exp_dir, "summary.json"),
         "train_jsonl": os.path.join(DATA, "matches", f"{name}_train{ext}"),
         "eval_jsonl": os.path.join(DATA, "matches", f"{name}_eval{ext}"),
-        "model": os.path.join(DATA, "models", f"{name}.json.gz" if compress_model else f"{name}.json"),
+        "model": os.path.join(DATA, "models", f"{name}{model_ext}" if model_ext else
+                              (f"{name}.json.gz" if compress_model else f"{name}.json")),
     }
 
 
 def learning_stats(ai: Agent) -> dict:
     """學習資料的統計（報告用）。"""
+    if getattr(ai, "kind", "") == "neural_card":
+        return {"parameters": len(ai.memory), "games_trained": ai.games_trained,
+                "channels": ai.config.channels, "blocks": ai.config.blocks}
     if isinstance(ai, MenaceAgent):
         visits = list(ai.memory.visits.values())
         stats = {**ai.memory.stats(), **ai.opponent_memory.stats()}
@@ -137,7 +146,8 @@ def learning_stats(ai: Agent) -> dict:
 
 def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
     name = cfg["name"]
-    p = _paths(name, cfg.get("compress_logs", False), cfg.get("compress_model", False))
+    p = _paths(name, cfg.get("compress_logs", False), cfg.get("compress_model", False),
+               ".pt" if cfg.get("ai", {}).get("type") == "neural_card" else None)
     if os.path.exists(p["summary"]) and not force:
         raise FileExistsError(f"實驗 {name} 已有結果；為保留原始數據不會覆蓋（請改名或加 --force）")
     if force:
@@ -173,6 +183,10 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
         color = eval_color if e.get("ai_color") is None else NAME_COLOR[e["ai_color"]]
         cp_opps.append((e.get("label", opp.name), opp, color))
     use_tactics = cfg.get("tactics", False) and hasattr(ai, "move_probabilities")
+    batched = hasattr(ai, "train_games")
+    if batched:
+        import torch
+        torch.set_num_threads(cfg.get("torch_threads", 1))
     t0 = time.time()
 
     def log(msg: str) -> None:
@@ -212,9 +226,14 @@ def run_experiment(cfg: dict, force: bool = False, quiet: bool = False) -> dict:
                 chunk = min(chunk, log_until - done)
             if hasattr(ai, "record_after"):
                 ai.record_after = detailed
-            rows = run_games(ai, train_opp, chunk, ai_color=ai_color, base_seed=seed, phase="train",
-                             experiment=name, logger=train_log, start_index=done + 1, tally=tally,
-                             include_learning=detailed)
+            if batched:   # 批次自我對弈（第五種模式）：同時下多局、每批學習一次
+                rows = ai.train_games(chunk, base_seed=seed, start_index=done + 1,
+                                      random_frac=cfg.get("random_frac", 0.1), logger=train_log,
+                                      experiment=name, include_learning=detailed, tally=tally)
+            else:
+                rows = run_games(ai, train_opp, chunk, ai_color=ai_color, base_seed=seed, phase="train",
+                                 experiment=name, logger=train_log, start_index=done + 1, tally=tally,
+                                 include_learning=detailed)
             train_rows.extend(rows)
             done += chunk
             if done % eval_every == 0 or done == n_train:

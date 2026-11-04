@@ -16,7 +16,12 @@ from core.game import Game
 from training.rewards import AI_LOSS, AI_WIN, DRAW
 
 ROLLING_WINDOW = 50
-LEARNING_AGENTS = (MenaceAgent, PatternMenaceAgent, GradientCardAgent, RuleOnlyCardAgent)
+LEARNING_AGENTS: tuple = (MenaceAgent, PatternMenaceAgent, GradientCardAgent, RuleOnlyCardAgent)
+try:  # 第五種模式需要 PyTorch；沒有安裝時其他模式照常運作
+    from agents.neural_card_agent import NeuralCardAgent
+    LEARNING_AGENTS += (NeuralCardAgent,)
+except ImportError:
+    NeuralCardAgent = None
 
 
 def is_learning_agent(agent: Agent) -> bool:

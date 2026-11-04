@@ -28,11 +28,27 @@
 由盤面上所有 3×3、2×4、4×2 小區塊的原始內容（自己／對手／空）組成的牌加總而得；終局後依勝負回頭修正（TD(λ)）。
 只用自我對弈（90%）與隨機對手（10%）訓練，3 個種子各 30 萬局：攻防測驗能連五 43.9%、擋四 17.6%、擋活三 24.9%
 （亂下約 8.5%）；牌值最高的小區塊全是「自己 4 子一排」，是 AI 自己發現的。但對規則型對手勝率仍低，
-原因與後續（神經網路版，分支 `experimental/nn-value-card`）見檢討報告第 10 節。
+原因見檢討報告第 10 節。
 
 ```bash
 python main.py experiment configs/experiments_v4.json --parallel 3
 ```
+
+### 第五種模式：位子牌＋神經網路（`agents/neural_card_agent.py`，需要 PyTorch）
+
+和第四種模式一樣只靠規則、一樣用「牌數 = 10 × e^(10 × V)」抽牌與 TD(λ) 獎懲，只是 V 改由小型卷積神經網路估計
+（輸入只有自己的子、對手的子兩張平面與一張全 1 平面）。3 個種子各 30 萬局：攻防測驗能連五 84.2%、擋四 73.5%、擋活三 65.7%，
+對隨機版規則型先手勝率 57.8%（第四種模式 13.2%）；但對棋形計分規則型、Minimax、Rapfi 仍然 0 勝。詳見檢討報告第 11 節。
+
+```bash
+pip install -r requirements-nn.txt
+```
+
+```bash
+python main.py experiment configs/experiments_v5.json --parallel 3
+```
+
+沒有安裝 PyTorch 時，其他四種模式照常執行，對弈介面也不會出現這個選項。
 為什麼要修正、每次修正的效果，請看 `docs/檢討報告.md` 與 `data/reports/experiment_report.md`。
 
 ## 安裝
@@ -65,12 +81,12 @@ python main.py play
 ```bash
 python main.py play --cli --opponent rule --human black
 ```
-文字模式對弈（不需要 Pygame）。對手可選 `learned`（第二次修正）、`improved`（第一次修正）、`baseline`（修正前）、`rule`、`pattern`、`minimax`、`random`、`rapfi`。
+文字模式對弈（不需要 Pygame）。對手可選 `learned`（第二次修正）、`ruleonly`（第四種模式）、`neural`（第五種模式，需 PyTorch）、`improved`（第一次修正）、`baseline`（修正前）、`rule`、`pattern`、`minimax`、`random`、`rapfi`。
 
 ```bash
 python main.py train --agent card --opponent rule --games 3000 --out data/models/my_model.json --log data/matches/my_train.jsonl
 ```
-訓練一個學習 AI。`--agent card` 是第二次修正（預設）、`pattern` 是第一次修正、`menace` 是修正前；`--color white` 讓 AI 當後手；`--load` 從既有權重繼續訓練。
+訓練一個學習 AI。`--agent card` 是第二次修正（預設）、`pattern` 是第一次修正、`menace` 是修正前、`ruleonly` 是第四種模式、`neural` 是第五種模式；`--color white` 讓 AI 當後手；`--load` 從既有權重繼續訓練。
 （混合對手＋自我對弈的訓練請用實驗設定檔，見下方。）
 
 ```bash
@@ -112,12 +128,12 @@ python -m pytest
 
 ```text
 core/            棋盤、五連判定、對弈流程與重播、八種對稱
-agents/          學習 AI（三個版本）、混合對手、隨機、規則型、Minimax、Rapfi
+agents/          學習 AI（五種模式）、混合對手、隨機、規則型、Minimax、Rapfi
 training/        獎懲規則、位子牌/對手記憶、訓練迴圈、凍結評估、攻防測驗、實驗執行器
 reporting/       棋譜 JSONL 紀錄、報告與圖表產生
 ui/              Pygame 介面、文字模式對弈
 configs/         實驗設定（make_experiments.py 產生 experiments.json）
-data/models/     訓練後的學習資料（JSON）
+data/models/     訓練後的學習資料（JSON、.json.gz；神經網路為 .pt）
 data/matches/    每一局棋譜（JSONL；輔助實驗為 .jsonl.gz）
 data/experiments/每組實驗的 config / train.csv / eval.csv / summary.json
 data/reports/    圖表與 experiment_report.md
